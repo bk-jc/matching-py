@@ -1,8 +1,10 @@
 from app import lambda_handler
 
-out = lambda_handler(
-    event={},
-    context=None
-)
 
-print(out)
+def test_lambda():
+    out = lambda_handler(
+        event={},
+        context=None
+    )
+
+    assert out['statusCode'] == 200
