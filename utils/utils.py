@@ -23,6 +23,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--use_skill_weights", type=bool, required=False, default=False)
 
     # Model config
+    parser.add_argument("--model_name", type=str, required=False, default="sentence-transformers/all-MiniLM-L6-v2")
+    parser.add_argument("--untrained", type=bool, required=False, default=False)
     parser.add_argument("--num_heads", type=int, required=False, default=4)
     parser.add_argument("--max_skills", type=int, required=False, default=20)
     parser.add_argument("--max_len", type=int, required=False, default=64,

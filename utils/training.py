@@ -1,7 +1,6 @@
 from copy import deepcopy
 
 import numpy as np
-from datasets import load_metric
 from transformers import TrainerCallback, Trainer
 
 

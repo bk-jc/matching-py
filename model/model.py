@@ -1,21 +1,21 @@
+import copy
+
 import torch
+import torch.nn.functional as F
 from torch import nn as nn
 from transformers import AutoModel, AutoTokenizer
 from transformers.models.bert.modeling_bert import BertLayer
-import copy
-import torch.nn.functional as F
 
 
 def get_model_fn(a):
-
     def get_model():
-        return Jarvis(a=a, model_name="prajjwal1/bert-tiny", emb_size=300, tokenizer=get_tokenizer())
+        return Jarvis(a=a, model_name=a.model_name, emb_size=300, tokenizer=get_tokenizer(a))
 
     return get_model
 
 
-def get_tokenizer():
-    return AutoTokenizer.from_pretrained("prajjwal1/bert-tiny")
+def get_tokenizer(a):
+    return AutoTokenizer.from_pretrained(a.model_name)
 
 
 class MeanPooling(nn.Module):
@@ -35,6 +35,9 @@ class Jarvis(nn.Module):
 
     def __init__(self, a, model_name, emb_size, tokenizer):
         super(Jarvis, self).__init__()
+
+        self.untrained = a.untrained
+
         self.base_model = AutoModel.from_pretrained(model_name)
         self.dropout = nn.Dropout(a.dropout_rate)
         self.pooler = MeanPooling()
@@ -57,7 +60,7 @@ class Jarvis(nn.Module):
             b=self.base_model.config.initializer_range / 2
         )
 
-        self.cos = nn.CosineSimilarity(dim=1, eps=1e-6)  # TODO update with argument from parse_args
+        self.cos = nn.CosineSimilarity(dim=1, eps=1e-12)
 
     def tokenize_document(self, document):
 
@@ -75,6 +78,11 @@ class Jarvis(nn.Module):
         # Tokenize the documents
         tokenized_documents = [self.tokenize_document(d) for d in documents]
 
+        if self.untrained:
+            document_skills = [self.base_model(**doc["skills"]).pooler_output for doc in
+                               tokenized_documents]
+            return document_skills[0].mean(axis=0).reshape(1, document_skills[0].shape[-1])
+
         # Get skill embeddings
         document_skills = [self.base_model(**doc["skills"]).last_hidden_state[:, 0] for doc in tokenized_documents]
 
@@ -86,8 +94,9 @@ class Jarvis(nn.Module):
 
         # Multiply embeddings with skill weights
         if self.use_skill_weights:
-            skill_weight_tensor = torch.cat([F.pad(torch.tensor([1.] + d["weights"]), (0, self.max_skills - 1 - len(d["weights"]))).unsqueeze(0)
-                                             for d in documents])
+            skill_weight_tensor = torch.cat(
+                [F.pad(torch.tensor([1.] + d["weights"]), (0, self.max_skills - 1 - len(d["weights"]))).unsqueeze(0)
+                 for d in documents])
             document_tensor *= skill_weight_tensor.unsqueeze(-1)
 
         # Add skill pooling token
@@ -118,9 +127,11 @@ class Jarvis(nn.Module):
         job_emb = self.get_document_embedding(job)
 
         sim = self.cos(cv_emb, job_emb)
-        loss = contrastive_loss(torch.tensor(label), sim)
-
-        return {"loss": loss}
+        if label is None:
+            return sim.detach().numpy()[0]
+        else:
+            loss = contrastive_loss(torch.tensor(label), sim)
+            return {"loss": loss}
 
 
 def contrastive_loss(y, sim, margin=0.5):
@@ -129,4 +140,4 @@ def contrastive_loss(y, sim, margin=0.5):
     https://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf
     """
     dist = 1 - sim
-    return torch.mean(y * 2 * dist + (1 - y) * 2 * F.relu(margin-dist))
+    return torch.mean(y * 2 * dist + (1 - y) * 2 * F.relu(margin - dist))

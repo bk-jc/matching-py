@@ -1,16 +1,17 @@
-from utils.utils import parse_args
+import torch
+from transformers import TrainingArguments
+
 from data.training_data_reader import get_data
 from model.model import get_model_fn, get_tokenizer
-from transformers import TrainingArguments
-from utils.training import compute_metrics, CustomCallback, CustomTrainer
-import torch
+from utils.training import compute_metrics, CustomTrainer
+from utils.utils import parse_args
 
 
 def main(a):
     train_ds = get_data(a.raw_train_path)
     test_ds = get_data(a.raw_test_path)
 
-    tokenizer = get_tokenizer()
+    tokenizer = get_tokenizer(a)
 
     train_ds = preprocess_dataset(train_ds, tokenizer, a)
     test_ds = preprocess_dataset(test_ds, tokenizer, a)
@@ -51,11 +52,8 @@ def main(a):
 
 
 def preprocess_dataset(ds, tokenizer, a):
-
     def tokenize_fn(x):
-
         for doctype in ["cv", "job"]:
-
             x.data[doctype]["skills"] = tokenizer(x.data[doctype]["skills"], max_length=a.max_len).data
 
         return x.data
@@ -78,7 +76,6 @@ def ignore_empty_skill_docs(ds):
 
 
 def tokenize_ds(tokenize_fn, ds):
-
     doctypes = ["cv", "job"]
     for doctype in doctypes:
 
@@ -89,7 +86,6 @@ def tokenize_ds(tokenize_fn, ds):
 
 
 def collate_fn(inputs):
-
     cv = [i["cv"] for i in inputs]
     job = [i["job"] for i in inputs]
     label = torch.tensor([i["label"] for i in inputs])
