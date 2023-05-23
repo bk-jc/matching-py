@@ -1,6 +1,9 @@
+import pytest
+
 from app import lambda_handler
 
 
+@pytest.mark.skip(reason="This is a local test that uses a downloaded model.")
 def test_lambda():
     out = lambda_handler(
         event={},
