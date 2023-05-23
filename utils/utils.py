@@ -36,5 +36,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--num_epochs", type=int, required=False, default=5)
     parser.add_argument("--warmup_ratio", type=float, required=False, default=0.1)
     parser.add_argument("--dropout_rate", type=float, required=False, default=0.1)
+    parser.add_argument("--weight_decay", type=float, required=False, default=0.01)
 
     return parser.parse_args()

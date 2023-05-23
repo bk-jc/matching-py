@@ -34,7 +34,7 @@ def main(a):
         eval_steps=10,
         fp16=False,
         prediction_loss_only=True,
-        # weight_decay=0.01
+        weight_decay=a.weight_decay,
     )
 
     trainer = CustomTrainer(
