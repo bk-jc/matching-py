@@ -3,8 +3,8 @@ from transformers import TrainingArguments
 from src.data import get_data
 from src.data import preprocess_dataset, collate_fn
 from src.model import get_model_fn, get_tokenizer
-from utils.training import compute_metrics, CustomTrainer
-from utils.utils import parse_args
+from src.utils.training import compute_metrics, CustomTrainer
+from src.utils.utils import parse_args
 
 
 def main(a):
@@ -19,7 +19,6 @@ def main(a):
     training_args = TrainingArguments(
         output_dir="test_trainer",
         do_eval=True,
-        # report_to="all",
         evaluation_strategy="steps",
         logging_strategy="steps",
         per_device_train_batch_size=a.batch_size,
@@ -44,7 +43,6 @@ def main(a):
         eval_dataset=test_ds,
         compute_metrics=compute_metrics,
         data_collator=collate_fn,
-        # tokenizer=tokenizer
     )
 
     trainer.train()
