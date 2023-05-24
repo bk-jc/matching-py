@@ -76,15 +76,16 @@ class Jarvis(nn.Module):
     def get_document_embedding(self, documents):
 
         # Tokenize the documents
-        tokenized_documents = [self.tokenize_document(d) for d in documents]
+        documents = [self.tokenize_document(d) for d in documents]
 
+        # Return untrained model output
         if self.untrained:
             document_skills = [self.base_model(**doc["skills"]).pooler_output for doc in
-                               tokenized_documents]
+                               documents]
             return document_skills[0].mean(axis=0).reshape(1, document_skills[0].shape[-1])
 
         # Get skill embeddings
-        document_skills = [self.base_model(**doc["skills"]).last_hidden_state[:, 0] for doc in tokenized_documents]
+        document_skills = [self.base_model(**doc["skills"]).last_hidden_state[:, 0] for doc in documents]
 
         # Pad to a tensor and get attention masks
         document_tensor = torch.cat([F.pad(doc, (0, 0, 0, self.max_skills - doc.shape[0])).unsqueeze(0)
@@ -100,23 +101,15 @@ class Jarvis(nn.Module):
             document_tensor *= skill_weight_tensor.unsqueeze(-1)
 
         # Add skill pooling token
-        pooling = self.skill_pooling.unsqueeze(0).unsqueeze(0).repeat(document_tensor.shape[0], 1, 1)
-        document_tensor = torch.concat([
-            pooling,
-            document_tensor
-        ], dim=1)
-        attention_mask = torch.concat([
-            torch.ones(attention_mask.shape[0], 1),
-            attention_mask
-        ], dim=1)
+        pooling = self.skill_pooling.view(1, 1, -1).repeat(len(documents), 1, 1)
+        document_tensor = torch.concat([pooling, document_tensor], dim=1)
+        attention_mask = torch.concat([torch.ones(len(documents), 1), attention_mask], dim=1)
+        attention_mask = attention_mask.view(len(documents), 1, 1, -1)
 
-        # Get skill interactions via BERT layer
-        skill_interactions = self.skill_attention(
-            document_tensor,
-            attention_mask=attention_mask.view(attention_mask.shape[0], 1, 1, attention_mask.shape[1])
-        )[0]
+        # Get skill interactions via BERT layer (output type is Tuple; take first index to get the Tensor)
+        skill_interactions = self.skill_attention(document_tensor, attention_mask=attention_mask)[0]
 
-        # Pool skill embeddings
+        # Pool skill interactions (CLS token)
         document_embeddings = skill_interactions[:, 0]
 
         return document_embeddings
