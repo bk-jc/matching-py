@@ -1,4 +1,5 @@
 import argparse
+from pathlib import Path
 
 
 def str2bool(v: str) -> bool:
@@ -17,9 +18,9 @@ def parse_args() -> argparse.Namespace:
 
     # Data paths
     parser.add_argument("--raw_train_path", help='Path of the raw train data', type=str, required=False,
-                        default='/Users/bas/PycharmProjects/jarvis2/data/sample.json')
+                        default=str(Path(__file__).parent.parent / 'data' / 'sample.json'))
     parser.add_argument("--raw_test_path", help='Path of the raw test data', type=str, required=False,
-                        default='/Users/bas/PycharmProjects/jarvis2/data/sample.json')
+                        default=str(Path(__file__).parent.parent / 'data' / 'sample.json'))
     parser.add_argument("--use_skill_weights", type=bool, required=False, default=False)
 
     # Model config
