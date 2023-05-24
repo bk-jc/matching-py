@@ -1,6 +1,6 @@
 import streamlit as st
 
-from model.model import get_model_fn
+from src.model import get_model_fn
 from utils.utils import parse_args
 
 a = parse_args()
