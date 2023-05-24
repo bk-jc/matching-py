@@ -1,3 +1,4 @@
+import torch
 from transformers import TrainingArguments
 
 from src.data import get_data
@@ -46,7 +47,20 @@ def main(a):
     )
 
     trainer.train()
-    print("finished")
+
+    def get_example_input(ds):
+        return {
+            "cv": [ds[0]['cv']],
+            "job": [ds[0]['job']]
+        }
+
+    _ = trainer.model(**get_example_input(test_ds))
+
+    # Export the model to ONNX
+    example_input = get_example_input(test_ds)
+    onnx_path = "jarvis_v2.onnx"
+    torch.onnx.export(trainer.model, tuple(example_input.values()), onnx_path,
+                      input_names=list(example_input.keys()), output_names=["similarity"])
 
 
 if __name__ == '__main__':
