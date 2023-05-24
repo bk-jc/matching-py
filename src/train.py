@@ -1,6 +1,6 @@
 from transformers import TrainingArguments
 
-from data.training_data_reader import get_data
+from src.data import get_data
 from src.data import preprocess_dataset, collate_fn
 from src.model import get_model_fn, get_tokenizer
 from utils.training import compute_metrics, CustomTrainer

@@ -1,14 +1,38 @@
+import json
+
 import torch
+from datasets import Dataset
+
+
+def get_data(data_filepath):
+    data = []
+
+    if 'sample' in data_filepath:
+        data.append(json.load(open(data_filepath)))
+        data = data * 500
+    else:
+        with open(data_filepath, 'r') as file:
+            for line in file:
+                data.append(json.loads(line))
+
+    return Dataset.from_list(data)
 
 
 def preprocess_dataset(ds, tokenizer, a):
     def tokenize_fn(x):
         for doctype in ["cv", "job"]:
-            x.data[doctype]["skills"] = tokenizer(x.data[doctype]["skills"], max_length=a.max_len).data
+            x[doctype]["skills"] = tokenizer(
+                x[doctype]["skills"],
+                max_length=a.max_len,
+                return_tensors='pt',
+                padding="max_length"
+            ).data
 
-        return x.data
+        return x
 
     ds = ignore_empty_skill_docs(ds)
+
+    # TODO cleanup; tokenization is done inside the model
     # ds = ds.map(lambda x: tokenize_fn(x))
 
     return ds
