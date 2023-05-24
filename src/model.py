@@ -121,7 +121,7 @@ class Jarvis(nn.Module):
 
         sim = self.cos(cv_emb, job_emb)
         if label is None:
-            return sim.detach().numpy()[0]
+            return sim
         else:
             loss = contrastive_loss(torch.tensor(label), sim)
             return {"loss": loss}
