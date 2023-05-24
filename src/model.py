@@ -53,7 +53,7 @@ class Jarvis(nn.Module):
         skill_attention_config.position_embedding_type = None  # Disable pos embeddings
 
         self.skill_attention = BertLayer(skill_attention_config)
-        self.skill_pooling = torch.nn.Parameter(torch.Tensor(128))
+        self.skill_pooling = torch.nn.Parameter(torch.Tensor(self.base_model.config.hidden_size))
         torch.nn.init.uniform_(
             self.skill_pooling,
             a=-1 * self.base_model.config.initializer_range / 2,
