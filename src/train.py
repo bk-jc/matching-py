@@ -1,9 +1,12 @@
+import os
+import sys
+
 import torch
 from transformers import TrainingArguments
 
 from src.data import get_data
 from src.data import preprocess_dataset, collate_fn
-from src.model import get_model_fn, get_tokenizer
+from src.model import get_model_fn
 from src.utils.training import compute_metrics, CustomTrainer
 from src.utils.utils import parse_args
 
@@ -12,10 +15,8 @@ def main(a):
     train_ds = get_data(a.raw_train_path)
     test_ds = get_data(a.raw_test_path)
 
-    tokenizer = get_tokenizer(a)
-
-    train_ds = preprocess_dataset(train_ds, tokenizer, a)
-    test_ds = preprocess_dataset(test_ds, tokenizer, a)
+    train_ds = preprocess_dataset(train_ds)
+    test_ds = preprocess_dataset(test_ds)
 
     training_args = TrainingArguments(
         output_dir="test_trainer",
@@ -58,11 +59,12 @@ def main(a):
 
     # Export the model to ONNX
     example_input = get_example_input(test_ds)
-    onnx_path = "jarvis_v2.onnx"
+    onnx_path = os.path.join(a.save_path, "jarvis_v2.onnx")
+    os.makedirs(a.save_path, exist_ok=True)
     torch.onnx.export(trainer.model, tuple(example_input.values()), onnx_path,
                       input_names=list(example_input.keys()), output_names=["similarity"])
 
 
 if __name__ == '__main__':
-    args = parse_args()
+    args = parse_args(sys.argv[1:])
     main(args)

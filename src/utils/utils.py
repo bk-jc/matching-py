@@ -13,7 +13,7 @@ def str2bool(v: str) -> bool:
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(args) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
 
     # Data paths
@@ -39,4 +39,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dropout_rate", type=float, required=False, default=0.1)
     parser.add_argument("--weight_decay", type=float, required=False, default=0.01)
 
-    return parser.parse_args()
+    # Artefact options
+    parser.add_argument("--save_path", type=str, required=False, default="./output")
+
+    return parser.parse_args(args)

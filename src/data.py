@@ -18,23 +18,8 @@ def get_data(data_filepath):
     return Dataset.from_list(data)
 
 
-def preprocess_dataset(ds, tokenizer, a):
-    def tokenize_fn(x):
-        for doctype in ["cv", "job"]:
-            x[doctype]["skills"] = tokenizer(
-                x[doctype]["skills"],
-                max_length=a.max_len,
-                return_tensors='pt',
-                padding="max_length"
-            ).data
-
-        return x
-
+def preprocess_dataset(ds):
     ds = ignore_empty_skill_docs(ds)
-
-    # TODO cleanup; tokenization is done inside the model
-    # ds = ds.map(lambda x: tokenize_fn(x))
-
     return ds
 
 
