@@ -10,7 +10,7 @@ def get_data(a, data_filepath):
 
     if 'sample' in data_filepath:
         data.append(json.load(open(data_filepath)))
-        data = data * a.val_steps * a.batch_size
+        data = data * a.val_steps * a.train_batch_size
     else:
         with open(data_filepath, 'r') as file:
             for line in file:
@@ -19,9 +19,9 @@ def get_data(a, data_filepath):
     return Dataset.from_list(data)
 
 
-def preprocess_dataset(a, ds):
+def preprocess_dataset(ds, batch_size):
     ds = ignore_empty_skill_docs(ds)
-    dataloader = DataLoader(ds, batch_size=a.batch_size, collate_fn=collate_fn)
+    dataloader = DataLoader(ds, batch_size=batch_size, collate_fn=collate_fn)
     return dataloader
 
 

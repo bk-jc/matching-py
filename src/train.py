@@ -15,28 +15,8 @@ def main(a):
     train_ds = get_data(a, a.raw_train_path)
     test_ds = get_data(a, a.raw_test_path)
 
-    train_ds = preprocess_dataset(a, train_ds)
-    test_ds = preprocess_dataset(a, test_ds)
-
-    # training_args = TrainingArguments(
-    #     output_dir="test_trainer",
-    #     do_eval=True,
-    #     evaluation_strategy="steps",
-    #     logging_strategy="steps",
-    #     per_device_train_batch_size=a.batch_size,
-    #     per_device_eval_batch_size=a.batch_size,
-    #     learning_rate=a.learning_rate,
-    #     logging_steps=1,
-    #     log_on_each_node=False,
-    #     num_train_epochs=a.num_epochs,
-    #     overwrite_output_dir=True,
-    #     run_name="dev",
-    #     warmup_ratio=a.warmup_ratio,
-    #     eval_steps=10,
-    #     fp16=False,
-    #     prediction_loss_only=True,
-    #     weight_decay=a.weight_decay,
-    # )
+    train_ds = preprocess_dataset(train_ds, a.train_batch_size)
+    test_ds = preprocess_dataset(test_ds, a.val_batch_size)
 
     pl_model = get_model(a, train_ds, test_ds)
 
@@ -46,12 +26,12 @@ def main(a):
         val_check_interval=a.val_steps,
         callbacks=get_callbacks(a),
         log_every_n_steps=1,
-        num_sanity_val_steps=0
+        num_sanity_val_steps=0,
+        precision=16 if a.fp16 else 32,
     )
 
     trainer.fit(
         model=pl_model,
-        # ckpt_path=a.save_path if a.save_path else None,
     )
 
     def get_example_input(ds):
