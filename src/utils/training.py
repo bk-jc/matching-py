@@ -1,7 +1,8 @@
 from copy import deepcopy
 
 import numpy as np
-from transformers import TrainerCallback, Trainer
+import pytorch_lightning as pl
+from transformers import TrainerCallback
 
 
 def compute_metrics(eval_pred):
@@ -25,7 +26,21 @@ class CustomCallback(TrainerCallback):
         return control_copy
 
 
-class CustomTrainer(Trainer):
-
-    def create_optimizer(self):
-        return Trainer.create_optimizer(self)
+def get_callbacks(a):
+    return [
+        pl.callbacks.ModelCheckpoint(
+            monitor="val_loss",
+            save_on_train_epoch_end=False,
+            dirpath=a.save_path,
+            every_n_epochs=1
+        ),
+        pl.callbacks.EarlyStopping(
+            monitor="val_loss",
+            min_delta=a.es_delta,
+            patience=a.es_patience,
+            verbose=True,
+            mode="min",
+            check_on_train_epoch_end=False,
+        ),
+        pl.callbacks.LearningRateMonitor(logging_interval="step")
+    ]

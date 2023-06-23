@@ -32,14 +32,17 @@ def parse_args(args) -> argparse.Namespace:
                         help="Max number of tokens for an input (job title or skill)")
 
     # Training options
-    parser.add_argument("--batch_size", type=int, required=False, default=32)
+    parser.add_argument("--batch_size", type=int, required=False, default=4)
     parser.add_argument("--learning_rate", type=float, required=False, default=1e-2)
-    parser.add_argument("--num_epochs", type=int, required=False, default=5)
+    parser.add_argument("--train_steps", type=int, required=False, default=10)
+    parser.add_argument("--val_steps", type=int, required=False, default=5)
     parser.add_argument("--warmup_ratio", type=float, required=False, default=0.1)
     parser.add_argument("--dropout_rate", type=float, required=False, default=0.1)
     parser.add_argument("--weight_decay", type=float, required=False, default=0.01)
+    parser.add_argument("--es_delta", type=float, required=False, default=0.01)
+    parser.add_argument("--es_patience", type=float, required=False, default=5)
 
     # Artefact options
-    parser.add_argument("--save_path", type=str, required=False, default="./output")
+    parser.add_argument("--save_path", type=str, required=False, default="output")
 
     return parser.parse_args(args)

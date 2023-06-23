@@ -2,14 +2,15 @@ import json
 
 import torch
 from datasets import Dataset
+from torch.utils.data import DataLoader
 
 
-def get_data(data_filepath):
+def get_data(a, data_filepath):
     data = []
 
     if 'sample' in data_filepath:
         data.append(json.load(open(data_filepath)))
-        data = data * 500
+        data = data * a.val_steps * a.batch_size
     else:
         with open(data_filepath, 'r') as file:
             for line in file:
@@ -18,9 +19,10 @@ def get_data(data_filepath):
     return Dataset.from_list(data)
 
 
-def preprocess_dataset(ds):
+def preprocess_dataset(a, ds):
     ds = ignore_empty_skill_docs(ds)
-    return ds
+    dataloader = DataLoader(ds, batch_size=a.batch_size, collate_fn=collate_fn)
+    return dataloader
 
 
 def ignore_empty_skill_docs(ds):

@@ -1,9 +1,11 @@
 import copy
 
+import pytorch_lightning
 import torch
 import torch.nn.functional as F
 from torch import nn as nn
 from transformers import AutoModel, AutoTokenizer
+from transformers import get_linear_schedule_with_warmup
 from transformers.models.bert.modeling_bert import BertLayer
 
 
@@ -12,6 +14,61 @@ def get_model_fn(a):
         return Jarvis(a=a, model_name=a.model_name, emb_size=300, tokenizer=get_tokenizer(a))
 
     return get_model
+
+
+class ModuleJarvis(pytorch_lightning.LightningModule):
+    def __init__(
+            self,
+            base_model,
+            lr,
+            n_steps,
+            train_ds=None,
+            val_ds=None,
+    ):
+        super().__init__()
+        self.model = base_model
+        self.lr = lr
+        self.n_steps = n_steps
+        self.train_ds = train_ds
+        self.val_ds = val_ds
+
+        for p in self.model.base_model.parameters():
+            p.requires_grad = False
+
+    def training_step(self, batch, batch_idx):
+        return self.model(**batch)
+
+    def train_dataloader(self):
+        return self.train_ds
+
+    def val_dataloader(self):
+        return self.val_ds
+
+    def configure_optimizers(self):
+        optimizer = torch.optim.AdamW(
+            params=[p for p in self.model.parameters() if p.requires_grad],
+            lr=self.lr,
+            betas=(0.9, 0.95),
+            eps=1e-8,
+        )
+        scheduler = get_linear_schedule_with_warmup(
+            optimizer=optimizer,
+            num_training_steps=self.n_steps,
+            num_warmup_steps=int(0.1 * self.n_steps)
+        )
+        scheduler = {
+            "scheduler": scheduler,
+            "interval": "step",
+            "frequency": 1,
+        }
+
+        return [optimizer], [scheduler]
+
+
+def get_model(a, train_ds, val_ds):
+    base_model = Jarvis(a=a, model_name=a.model_name, emb_size=300, tokenizer=get_tokenizer(a))
+    return ModuleJarvis(base_model=base_model, lr=a.learning_rate, n_steps=a.train_steps, train_ds=train_ds,
+                        val_ds=val_ds)
 
 
 def get_tokenizer(a):
