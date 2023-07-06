@@ -3,6 +3,7 @@ import copy
 import pytorch_lightning
 import torch
 import torch.nn.functional as F
+import torchmetrics
 from torch import nn as nn
 from transformers import AutoModel, AutoTokenizer
 from transformers import get_linear_schedule_with_warmup
@@ -32,11 +33,46 @@ class ModuleJarvis(pytorch_lightning.LightningModule):
         self.train_ds = train_ds
         self.val_ds = val_ds
 
+        # Freeze transformer model
         for p in self.model.base_model.parameters():
             p.requires_grad = False
 
+        # Metrics
+        self.train_metrics = self.get_metric_dict()
+        self.val_metrics = self.get_metric_dict()
+
+    @staticmethod
+    def get_metric_dict():
+        return {
+            'precision': torchmetrics.Precision(task="binary", num_classes=2),
+            'recall': torchmetrics.Recall(task="binary", num_classes=2),
+            'f1': torchmetrics.F1Score(task="binary", num_classes=2),
+            # 'confusion_matrix': torchmetrics.ConfusionMatrix(task="binary", num_classes=2),
+        }
+
     def training_step(self, batch, batch_idx):
-        return self.model(**batch)
+        outputs = self.model(**batch)
+        target, preds = batch['label'], outputs['sim']
+        preds = (preds > 0.5).to(torch.int64)  # threshold the predictions
+        for metric in self.train_metrics.values():
+            metric(preds=preds, target=target)
+        return outputs
+
+    def validation_step(self, batch, batch_idx):
+        outputs = self.model(**batch)
+        target, preds = batch['label'], outputs['sim']
+        preds = (preds > 0.5).to(torch.int64)  # threshold the predictions
+        for metric in self.val_metrics.values():
+            metric(preds=preds, target=target)
+        return outputs
+
+    def on_train_epoch_end(self) -> None:
+        for key, metric in self.train_metrics.items():
+            self.log(f"train_{key}", metric.compute())
+
+    def on_validation_epoch_end(self) -> None:
+        for key, metric in self.val_metrics.items():
+            self.log(f"val_{key}", metric.compute())
 
     def train_dataloader(self):
         return self.train_ds
@@ -181,7 +217,7 @@ class Jarvis(nn.Module):
             return sim
         else:
             loss = contrastive_loss(torch.tensor(label), sim)
-            return {"loss": loss}
+            return {"loss": loss, "sim": sim}
 
 
 def contrastive_loss(y, sim, margin=0.5):
