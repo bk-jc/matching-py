@@ -2,6 +2,7 @@ import os
 import sys
 
 import torch
+from lightning.pytorch.loggers import CSVLogger
 from pytorch_lightning import Trainer
 
 from src.data import get_data
@@ -28,6 +29,7 @@ def main(a):
         log_every_n_steps=1,
         num_sanity_val_steps=0,
         precision=16 if a.fp16 else 32,
+        logger=CSVLogger(name=a.save_path, save_dir=os.path.join(a.save_path, a.exp_name)),
     )
 
     trainer.fit(
