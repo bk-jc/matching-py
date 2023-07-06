@@ -46,5 +46,6 @@ def parse_args(args) -> argparse.Namespace:
 
     # Artefact options
     parser.add_argument("--save_path", type=str, required=False, default="output")
+    parser.add_argument("--exp_name", type=str, required=False, default="develop")
 
     return parser.parse_args(args)

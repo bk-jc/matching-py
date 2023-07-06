@@ -46,7 +46,7 @@ def main(a):
 
     # Export the model to ONNX
     example_input = get_example_input(test_ds)
-    onnx_path = os.path.join(a.save_path, "jarvis_v2.onnx")
+    onnx_path = os.path.join(a.save_path, a.exp_name, "jarvis_v2.onnx")
     os.makedirs(a.save_path, exist_ok=True)
     torch.onnx.export(model, tuple(example_input.values()), onnx_path,
                       input_names=list(example_input.keys()), output_names=["similarity"])
