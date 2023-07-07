@@ -1,7 +1,10 @@
+import os
 from copy import deepcopy
 
 import numpy as np
 import pytorch_lightning as pl
+import torch
+from matplotlib import pyplot as plt
 from transformers import TrainerCallback
 
 
@@ -44,3 +47,23 @@ def get_callbacks(a):
         ),
         pl.callbacks.LearningRateMonitor(logging_interval="step")
     ]
+
+
+def save_conf_matrix(confusion_matrix, csv_logger):
+    labels = ['Negative', 'Positive']  # Labels for the two classes
+    plt.figure(figsize=(4, 4))
+    plt.imshow(confusion_matrix, interpolation='nearest', cmap=plt.cm.Blues)
+
+    plt.title("Confusion Matrix")
+    plt.colorbar()
+    tick_marks = torch.arange(len(labels))
+    plt.xticks(tick_marks, labels)
+    plt.yticks(tick_marks, labels)
+    plt.xlabel('Predicted')
+    plt.ylabel('True')
+    plt.tight_layout()
+
+    # Save to png
+    save_folder = csv_logger.log_dir
+    save_path = os.path.join(save_folder, 'confusion_matrix.png')
+    plt.savefig(save_path)

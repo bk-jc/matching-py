@@ -8,7 +8,7 @@ from pytorch_lightning import Trainer
 from src.data import get_data
 from src.data import preprocess_dataset
 from src.model import get_model
-from src.utils.training import get_callbacks
+from src.utils.training import get_callbacks, save_conf_matrix
 from src.utils.utils import parse_args
 
 
@@ -43,6 +43,11 @@ def main(a):
         }
 
     model = pl_model.model
+
+    save_conf_matrix(
+        confusion_matrix=pl_model.val_metrics['confusion_matrix'].compute(),
+        csv_logger=trainer.loggers[0]
+    )
 
     _ = model(**get_example_input(test_ds))
 

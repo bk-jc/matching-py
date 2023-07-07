@@ -40,6 +40,8 @@ class ModuleJarvis(pytorch_lightning.LightningModule):
         # Metrics
         self.train_metrics = self.get_metric_dict()
         self.val_metrics = self.get_metric_dict()
+        self.train_step_loss = []
+        self.val_step_loss = []
 
     @staticmethod
     def get_metric_dict():
@@ -47,7 +49,7 @@ class ModuleJarvis(pytorch_lightning.LightningModule):
             'precision': torchmetrics.Precision(task="binary", num_classes=2),
             'recall': torchmetrics.Recall(task="binary", num_classes=2),
             'f1': torchmetrics.F1Score(task="binary", num_classes=2),
-            # 'confusion_matrix': torchmetrics.ConfusionMatrix(task="binary", num_classes=2),
+            'confusion_matrix': torchmetrics.ConfusionMatrix(task="binary", num_classes=2),
         }
 
     def training_step(self, batch, batch_idx):
@@ -56,6 +58,7 @@ class ModuleJarvis(pytorch_lightning.LightningModule):
         preds = (preds > 0.5).to(torch.int64)  # threshold the predictions
         for metric in self.train_metrics.values():
             metric(preds=preds, target=target)
+        self.train_step_loss.append(outputs['loss'])
         return outputs
 
     def validation_step(self, batch, batch_idx):
@@ -64,15 +67,22 @@ class ModuleJarvis(pytorch_lightning.LightningModule):
         preds = (preds > 0.5).to(torch.int64)  # threshold the predictions
         for metric in self.val_metrics.values():
             metric(preds=preds, target=target)
+        self.val_step_loss.append(outputs['loss'])
         return outputs
 
     def on_train_epoch_end(self) -> None:
         for key, metric in self.train_metrics.items():
-            self.log(f"train_{key}", metric.compute())
+            if key != "confusion_matrix":
+                self.log(f"train_{key}", metric.compute())
+        self.log("train_loss", torch.stack(self.train_step_loss).mean())
+        self.train_step_loss.clear()
 
     def on_validation_epoch_end(self) -> None:
         for key, metric in self.val_metrics.items():
-            self.log(f"val_{key}", metric.compute())
+            if key != "confusion_matrix":
+                self.log(f"val_{key}", metric.compute())
+        self.log("val_loss", torch.stack(self.val_step_loss).mean())
+        self.val_step_loss.clear()
 
     def train_dataloader(self):
         return self.train_ds
