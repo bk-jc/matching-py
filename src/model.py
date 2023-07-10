@@ -38,8 +38,19 @@ class ModuleJarvis(pytorch_lightning.LightningModule):
             p.requires_grad = False
 
         # Metrics
-        self.train_metrics = self.get_metric_dict()
-        self.val_metrics = self.get_metric_dict()
+        self.metric_splits = {
+            "all": lambda x: [True] * len(x["label"]),
+            "min_6_skills": lambda x: [
+                min(
+                    len(x["cv"][i]["skills"]),
+                    len(x["job"][i]["skills"])
+                ) >= 5 for i in range(len(x["label"]))]
+        }
+        self.train_metrics = {}
+        self.val_metrics = {}
+        for split_name in self.metric_splits.keys():
+            self.train_metrics[split_name] = self.get_metric_dict()
+            self.val_metrics[split_name] = self.get_metric_dict()
         self.train_step_loss = []
         self.val_step_loss = []
 
@@ -52,35 +63,40 @@ class ModuleJarvis(pytorch_lightning.LightningModule):
             'confusion_matrix': torchmetrics.ConfusionMatrix(task="binary", num_classes=2),
         }
 
-    def training_step(self, batch, batch_idx):
-        outputs = self.model(**batch)
+    def update_metrics(self, batch, outputs, metrics):
         target, preds = batch['label'], outputs['sim']
         preds = (preds > 0.5).to(torch.int64)  # threshold the predictions
-        for metric in self.train_metrics.values():
-            metric(preds=preds, target=target)
+        for split_name, filter_fn in self.metric_splits.items():
+            filtered_idx = filter_fn(batch)
+            if True in filtered_idx:
+                for metric in metrics[split_name].values():
+                    metric(preds=preds[filtered_idx], target=target[filtered_idx])
+
+    def log_metrics(self, metrics):
+        for split_name in self.metric_splits.keys():
+            for metric_key, metric in metrics[split_name].items():
+                if metric_key != "confusion_matrix":
+                    self.log(f"val_{split_name}_{metric_key}", metric.compute())
+
+    def training_step(self, batch, batch_idx):
+        outputs = self.model(**batch)
+        self.update_metrics(batch, outputs, self.train_metrics)
         self.train_step_loss.append(outputs['loss'])
         return outputs
 
     def validation_step(self, batch, batch_idx):
         outputs = self.model(**batch)
-        target, preds = batch['label'], outputs['sim']
-        preds = (preds > 0.5).to(torch.int64)  # threshold the predictions
-        for metric in self.val_metrics.values():
-            metric(preds=preds, target=target)
+        self.update_metrics(batch, outputs, self.val_metrics)
         self.val_step_loss.append(outputs['loss'])
         return outputs
 
     def on_train_epoch_end(self) -> None:
-        for key, metric in self.train_metrics.items():
-            if key != "confusion_matrix":
-                self.log(f"train_{key}", metric.compute())
+        self.log_metrics(self.train_metrics)
         self.log("train_loss", torch.stack(self.train_step_loss).mean())
         self.train_step_loss.clear()
 
     def on_validation_epoch_end(self) -> None:
-        for key, metric in self.val_metrics.items():
-            if key != "confusion_matrix":
-                self.log(f"val_{key}", metric.compute())
+        self.log_metrics(self.val_metrics)
         self.log("val_loss", torch.stack(self.val_step_loss).mean())
         self.val_step_loss.clear()
 

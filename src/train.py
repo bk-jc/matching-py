@@ -45,7 +45,7 @@ def main(a):
     model = pl_model.model
 
     save_conf_matrix(
-        confusion_matrix=pl_model.val_metrics['confusion_matrix'].compute(),
+        confusion_matrix=pl_model.val_metrics["all"]['confusion_matrix'].compute(),
         csv_logger=trainer.loggers[0]
     )
 
