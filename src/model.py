@@ -44,7 +44,7 @@ class ModuleJarvis(pytorch_lightning.LightningModule):
                 min(
                     len(x["cv"][i]["skills"]),
                     len(x["job"][i]["skills"])
-                ) >= 5 for i in range(len(x["label"]))]
+                ) >= 6 for i in range(len(x["label"]))]
         }
         self.train_metrics = {}
         self.val_metrics = {}
