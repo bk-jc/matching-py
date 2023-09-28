@@ -1,0 +1,36 @@
+1:
+  cv:
+    skills:
+      - Python
+      - MS Office
+    jobtitle: ""
+  job:
+    skills:
+      - Java
+      - MS Office
+    jobtitle: "Java Software Engineer (100%)"
+  label: True
+2:
+  cv:
+    skills:
+      - Python
+      - MS Office
+    jobtitle: ""
+  job:
+    skills:
+      - Java
+      - MS Office
+    jobtitle: "Java Software Engineer (100%)"
+  label: True
+3:
+  cv:
+    skills:
+      - Python
+      - MS Office
+    jobtitle: ""
+  job:
+    skills:
+      - Java
+      - MS Office
+    jobtitle: "Java Software Engineer (100%)"
+  label: True
