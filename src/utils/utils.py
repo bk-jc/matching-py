@@ -26,6 +26,7 @@ def parse_args(args) -> argparse.Namespace:
 
     # Model config
     parser.add_argument("--model_name", type=str, required=False, default="sentence-transformers/all-MiniLM-L6-v2")
+    parser.add_argument("--pooling_mode", type=str, required=False, default="cls", choices=["cls", "max"])
     parser.add_argument("--untrained", type=bool, required=False, default=False)
     parser.add_argument("--num_heads", type=int, required=False, default=4)
     parser.add_argument("--max_skills", type=int, required=False, default=20)

@@ -156,11 +156,12 @@ class Jarvis(nn.Module):
         super(Jarvis, self).__init__()
 
         self.untrained = a.untrained
+        self.pooling_mode = a.pooling_mode
 
         self.base_model = AutoModel.from_pretrained(model_name)
         self.dropout = nn.Dropout(a.dropout_rate)
         self.pooler = MeanPooling()
-        self.readout = nn.Linear(self.base_model.config.hidden_size, emb_size)
+        self.readout = nn.Linear(self.base_model.config.hidden_size, emb_size)  # TODO integrate in model
         self.loss = nn.CrossEntropyLoss()
         self.tokenizer = tokenizer
         self.max_len = a.max_len
@@ -171,13 +172,14 @@ class Jarvis(nn.Module):
         skill_attention_config = copy.deepcopy(self.base_model.config)
         skill_attention_config.position_embedding_type = None  # Disable pos embeddings
 
-        self.skill_attention = BertLayer(skill_attention_config)
-        self.skill_pooling = torch.nn.Parameter(torch.Tensor(self.base_model.config.hidden_size))
-        torch.nn.init.uniform_(
-            self.skill_pooling,
-            a=-1 * self.base_model.config.initializer_range / 2,
-            b=self.base_model.config.initializer_range / 2
-        )
+        if a.pooling_mode == "cls":
+            self.skill_attention = BertLayer(skill_attention_config)
+            self.skill_pooling = torch.nn.Parameter(torch.Tensor(self.base_model.config.hidden_size))
+            torch.nn.init.uniform_(
+                self.skill_pooling,
+                a=-1 * self.base_model.config.initializer_range / 2,
+                b=self.base_model.config.initializer_range / 2
+            )
 
         self.cos = nn.CosineSimilarity(dim=1, eps=1e-12)
 
@@ -219,17 +221,26 @@ class Jarvis(nn.Module):
                  for d in documents])
             document_tensor *= skill_weight_tensor.unsqueeze(-1)
 
-        # Add skill pooling token
-        pooling = self.skill_pooling.view(1, 1, -1).repeat(len(documents), 1, 1)
-        document_tensor = torch.concat([pooling, document_tensor], dim=1)
-        attention_mask = torch.concat([torch.ones(len(documents), 1), attention_mask], dim=1)
-        attention_mask = attention_mask.view(len(documents), 1, 1, -1)
+        if self.pooling_mode == "cls":
 
-        # Get skill interactions via BERT layer (output type is Tuple; take first index to get the Tensor)
-        skill_interactions = self.skill_attention(document_tensor, attention_mask=attention_mask)[0]
+            # Add skill pooling token
+            pooling = self.skill_pooling.view(1, 1, -1).repeat(len(documents), 1, 1)
+            document_tensor = torch.concat([pooling, document_tensor], dim=1)
+            attention_mask = torch.concat([torch.ones(len(documents), 1), attention_mask], dim=1)
+            attention_mask = attention_mask.view(len(documents), 1, 1, -1)
 
-        # Pool skill interactions (CLS token)
-        document_embeddings = skill_interactions[:, 0]
+            # Get skill interactions via BERT layer (output type is Tuple; take first index to get the Tensor)
+            skill_interactions = self.skill_attention(document_tensor, attention_mask=attention_mask)[0]
+
+            # Pool skill interactions (CLS token)
+            document_embeddings = skill_interactions[:, 0]
+
+        elif self.pooling_mode == "max":
+
+            mask = attention_mask.unsqueeze(-1).repeat(1, 1, self.base_model.config.hidden_size)
+            document_tensor[mask == 0] = -torch.inf
+
+            document_embeddings = torch.max(document_tensor, axis=1)
 
         return document_embeddings
 
