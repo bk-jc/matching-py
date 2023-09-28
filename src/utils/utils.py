@@ -18,9 +18,9 @@ def parse_args(args) -> argparse.Namespace:
 
     # Data paths
     parser.add_argument("--raw_train_path", help='Path of the raw train data', type=str, required=False,
-                        default=str(Path(__file__).parent.parent.parent / 'data' / 'sample.json'))
+                        default=str(Path(__file__).parent.parent.parent / 'data' / 'mock' / 'sample.json'))
     parser.add_argument("--raw_test_path", help='Path of the raw test data', type=str, required=False,
-                        default=str(Path(__file__).parent.parent.parent / 'data' / 'sample.json'))
+                        default=str(Path(__file__).parent.parent.parent / 'data' / 'mock' / 'sample.json'))
     parser.add_argument("--use_skill_weights", type=bool, required=False, default=False)
 
     # Model config
