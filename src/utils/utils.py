@@ -22,6 +22,7 @@ def parse_args(args) -> argparse.Namespace:
     parser.add_argument("--raw_test_path", help='Path of the raw test data', type=str, required=False,
                         default=str(Path(__file__).parent.parent.parent / 'data' / 'mock' / 'sample.json'))
     parser.add_argument("--use_skill_weights", type=bool, required=False, default=False)
+    parser.add_argument("--allow_half_label", type=bool, required=False, default=False)
 
     # Model config
     parser.add_argument("--model_name", type=str, required=False, default="sentence-transformers/all-MiniLM-L6-v2")
