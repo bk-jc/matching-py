@@ -1,6 +1,7 @@
 import json
 from copy import deepcopy
 
+import numpy as np
 import pandas as pd
 import torch
 from datasets import Dataset
@@ -58,10 +59,33 @@ def get_data(a, data_filepath):
     return Dataset.from_list(data)
 
 
-def preprocess_dataset(ds, batch_size):
+def preprocess_dataset(ds, a, train):
     ds = ignore_empty_skill_docs(ds)
+    if train:
+        batch_size = a.train_batch_size
+        if a.negative_sampling:
+            ds = insert_negative_samples(ds, a)
+    else:
+        batch_size = a.val_batch_size
+
     dataloader = DataLoader(ds, batch_size=batch_size, collate_fn=collate_fn)
     return dataloader
+
+
+def insert_negative_samples(ds, a):
+    n_samples = int(len(ds) * a.negative_ratio)
+
+    samples = []
+    for _ in range(n_samples):
+        i = np.random.choice(len(ds))
+        j = (i + np.random.choice(len(ds) - 2) + 1) % len(ds)  # Make sure that j != i
+        samples.append({
+            "cv": ds[i]["cv"],
+            "job": ds[j]["job"],
+            "label": 0.,
+        })
+
+    return Dataset.from_list(samples + [_ for _ in ds])
 
 
 def ignore_empty_skill_docs(ds):

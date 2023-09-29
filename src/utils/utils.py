@@ -16,13 +16,17 @@ def str2bool(v: str) -> bool:
 def parse_args(args) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
 
-    # Data paths
+    # Data options
     parser.add_argument("--raw_train_path", help='Path of the raw train data', type=str, required=False,
                         default=str(Path(__file__).parent.parent.parent / 'data' / 'mock' / 'sample.json'))
     parser.add_argument("--raw_test_path", help='Path of the raw test data', type=str, required=False,
                         default=str(Path(__file__).parent.parent.parent / 'data' / 'mock' / 'sample.json'))
     parser.add_argument("--use_skill_weights", type=bool, required=False, default=False)
     parser.add_argument("--allow_half_label", type=bool, required=False, default=False)
+    parser.add_argument("--negative_sampling", type=bool, required=False, default=True)
+    parser.add_argument("--negative_ratio", type=float, required=False, default=1,
+                        help="How many negatives to sample for each positive sample. Defaults to 1, "
+                             "which means the dataset is balanced between positive and negatives samples.")
 
     # Model config
     parser.add_argument("--model_name", type=str, required=False, default="sentence-transformers/all-MiniLM-L6-v2")

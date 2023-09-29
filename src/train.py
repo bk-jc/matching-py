@@ -16,8 +16,8 @@ def main(a):
     train_ds = get_data(a, a.raw_train_path)
     test_ds = get_data(a, a.raw_test_path)
 
-    train_ds = preprocess_dataset(train_ds, a.train_batch_size)
-    test_ds = preprocess_dataset(test_ds, a.val_batch_size)
+    train_ds = preprocess_dataset(train_ds, a, train=True)
+    test_ds = preprocess_dataset(test_ds, a, train=False)
 
     pl_model = get_model(a, train_ds, test_ds)
 
