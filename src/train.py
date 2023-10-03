@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 from datetime import datetime
@@ -10,19 +11,24 @@ from pytorch_lightning import Trainer
 from src.data import get_data
 from src.data import preprocess_dataset
 from src.model import get_model
+from src.utils.onnx import export_to_onnx
 from src.utils.training import get_callbacks, save_conf_matrix
 from src.utils.utils import parse_args
 
 
 def main(a):
+    logging.info("Getting data")
     train_ds = get_data(a, a.raw_train_path)
     test_ds = get_data(a, a.raw_test_path)
 
+    logging.info("Preprocessing data")
     train_ds = preprocess_dataset(train_ds, a, train=True)
     test_ds = preprocess_dataset(test_ds, a, train=False)
 
+    logging.info("Loading model")
     pl_model = get_model(a, train_ds, test_ds)
 
+    logging.info("Loading trainer")
     version = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
     trainer = Trainer(
         accelerator="auto" if (torch.cuda.is_available() and a.use_gpu) else "cpu",
@@ -38,31 +44,18 @@ def main(a):
         ),
     )
 
+    logging.info("Starting training")
     trainer.fit(
         model=pl_model,
     )
-
-    def get_example_input(ds):
-        return {
-            "cv": [ds.dataset[0]['cv']],
-            "job": [ds.dataset[0]['job']]
-        }
-
-    model = pl_model.model
 
     save_conf_matrix(
         confusion_matrix=pl_model.val_metrics["all"]['confusion_matrix'].compute(),
         csv_logger=trainer.loggers[0]
     )
 
-    _ = model(**get_example_input(test_ds))
-
-    # Export the model to ONNX
-    example_input = get_example_input(test_ds)
-    onnx_path = os.path.join(a.save_path, a.exp_name, "output", version, "jarvis_v2.onnx")
-    os.makedirs(os.path.join(a.save_path, a.exp_name, "output", version), exist_ok=True)
-    torch.onnx.export(model, tuple(example_input.values()), onnx_path,
-                      input_names=list(example_input.keys()), output_names=["similarity"])
+    logging.info("Exporting model artefact")
+    export_to_onnx(a, model=pl_model.model, test_ds=test_ds, version=version)
 
 
 if __name__ == '__main__':
