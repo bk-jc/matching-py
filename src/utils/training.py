@@ -29,12 +29,12 @@ class CustomCallback(TrainerCallback):
         return control_copy
 
 
-def get_callbacks(a):
+def get_callbacks(a, version):
     return [
         pl.callbacks.ModelCheckpoint(
             monitor="val_loss",
             save_on_train_epoch_end=False,
-            dirpath=a.save_path,
+            dirpath=os.path.join(a.exp_name, a.save_path, "output", version),
             every_n_epochs=1
         ),
         pl.callbacks.EarlyStopping(

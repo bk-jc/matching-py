@@ -1,8 +1,10 @@
 import os
 import sys
+from datetime import datetime
 
 import torch
 from lightning.pytorch.loggers import CSVLogger
+from lightning.pytorch.loggers import TensorBoardLogger
 from pytorch_lightning import Trainer
 
 from src.data import get_data
@@ -21,15 +23,19 @@ def main(a):
 
     pl_model = get_model(a, train_ds, test_ds)
 
+    version = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
     trainer = Trainer(
         accelerator="auto" if (torch.cuda.is_available() and a.use_gpu) else "cpu",
         max_steps=a.train_steps,
         val_check_interval=a.val_steps,
-        callbacks=get_callbacks(a),
+        callbacks=get_callbacks(a, version),
         log_every_n_steps=1,
         num_sanity_val_steps=0,
         precision=16 if a.fp16 else 32,
-        logger=CSVLogger(name=a.save_path, save_dir=os.path.join(a.save_path, a.exp_name)),
+        logger=(
+            CSVLogger(name=a.save_path, save_dir=os.path.join(a.save_path, a.exp_name), version=version),
+            TensorBoardLogger(name=a.save_path, save_dir=os.path.join(a.save_path, a.exp_name), version=version),
+        ),
     )
 
     trainer.fit(
@@ -53,8 +59,8 @@ def main(a):
 
     # Export the model to ONNX
     example_input = get_example_input(test_ds)
-    onnx_path = os.path.join(a.save_path, a.exp_name, "jarvis_v2.onnx")
-    os.makedirs(os.path.join(a.save_path, a.exp_name), exist_ok=True)
+    onnx_path = os.path.join(a.save_path, a.exp_name, "output", version, "jarvis_v2.onnx")
+    os.makedirs(os.path.join(a.save_path, a.exp_name, "output", version), exist_ok=True)
     torch.onnx.export(model, tuple(example_input.values()), onnx_path,
                       input_names=list(example_input.keys()), output_names=["similarity"])
 

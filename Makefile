@@ -9,7 +9,7 @@ dockerImage = sumgpt/latest
 
 # Targets
 
-.PHONY: setup update compile test run release deploy
+.PHONY: setup tensorboard update compile test run release deploy
 
 setup:
 	$(call output, "SETUP $(projectName)")
@@ -24,6 +24,9 @@ setup:
 		echo "pyenv not set for local directory - set using 'pyenv local'"; \
 		exit 1; \
 	fi
+
+tensorboard:
+	tensorboard --logdir ./src/output
 
 update:
 	$(call output, "UPDATE $(projectName)")
