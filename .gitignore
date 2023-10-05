@@ -1,4 +1,7 @@
 .venv
 .idea
 .vscode
-/src/output/*
+**/output/*
+**/__pycache__
+data/*
+!data/mock

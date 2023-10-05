@@ -56,7 +56,7 @@ def get_data(a, data_filepath):
     else:
         raise NotImplementedError
 
-    return Dataset.from_list(data)
+    return data
 
 
 def preprocess_dataset(ds, a, train):

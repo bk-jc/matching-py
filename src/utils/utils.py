@@ -50,6 +50,12 @@ def parse_args(args) -> argparse.Namespace:
     parser.add_argument("--es_patience", type=float, required=False, default=5)
     parser.add_argument("--fp16", type=bool, required=False, default=False)
 
+    # Cross-validation
+    parser.add_argument("--n_splits", type=int, required=False, default=0,
+                        help="Number of CV splits. Setting to 0 means no cross-validation.")
+    parser.add_argument("--score_metric", type=str, required=False, default="val_all_f1")
+    parser.add_argument("--lower_is_better", type=bool, required=False, default=False)
+
     # Artefact options
     parser.add_argument("--save_path", type=str, required=False, default="output")
     parser.add_argument("--exp_name", type=str, required=False, default="develop")

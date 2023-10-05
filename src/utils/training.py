@@ -1,11 +1,20 @@
+import csv
+import logging
 import os
 from copy import deepcopy
 
 import numpy as np
+import pandas as pd
 import pytorch_lightning as pl
 import torch
+from datasets import Dataset
+from lightning.pytorch.loggers import CSVLogger, TensorBoardLogger
 from matplotlib import pyplot as plt
+from pytorch_lightning import Trainer
 from transformers import TrainerCallback
+
+from src.data import preprocess_dataset
+from src.model import get_model
 
 
 def compute_metrics(eval_pred):
@@ -34,7 +43,7 @@ def get_callbacks(a, version):
         pl.callbacks.ModelCheckpoint(
             monitor="val_loss",
             save_on_train_epoch_end=False,
-            dirpath=os.path.join(a.exp_name, a.save_path, "output", version),
+            dirpath=os.path.join(a.save_path, a.exp_name, version),
             every_n_epochs=1
         ),
         pl.callbacks.EarlyStopping(
@@ -67,3 +76,62 @@ def save_conf_matrix(confusion_matrix, csv_logger):
     save_folder = csv_logger.log_dir
     save_path = os.path.join(save_folder, 'confusion_matrix.png')
     plt.savefig(save_path)
+
+
+def compute_kfold_scores(a, version):
+    base_path = os.path.join(a.save_path, a.exp_name, version)
+    cvs_paths = [os.path.join(base_path, f"fold{fold}", "metrics.csv") for fold in range(1, a.n_splits + 1)]
+    fold_scores = []
+    for csv_path in cvs_paths:
+        csv_file = pd.read_csv(csv_path)
+
+        fold_score = csv_file[a.score_metric].min() if a.lower_is_better else csv_file[a.score_metric].max()
+        fold_scores.append(fold_score)
+
+    kfold_score = np.mean(fold_scores)
+
+    with open(os.path.join(base_path, 'kfold_score.csv'), 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(
+            ["kfold_metric",
+             f"kfold_score (metric={a.score_metric},"
+             f" lower_is_better={a.lower_is_better})"
+             ])
+        writer.writerow([a.score_metric, kfold_score])
+
+
+def train_pipeline(a, test_data, train_data, version, fold=None):
+    logging.info("Preprocessing data")
+    train_ds = preprocess_dataset(Dataset.from_list(train_data), a, train=True)
+    test_ds = preprocess_dataset(Dataset.from_list(test_data), a, train=False)
+
+    logging.info("Loading model")
+    pl_model = get_model(a, train_ds, test_ds)
+
+    logging.info("Loading trainer")
+    if fold is not None:
+        version += f"/fold{fold + 1}"
+    trainer = Trainer(
+        accelerator="auto" if (torch.cuda.is_available() and a.use_gpu) else "cpu",
+        max_steps=a.train_steps,
+        val_check_interval=a.val_steps,
+        callbacks=get_callbacks(a, version),
+        log_every_n_steps=1,
+        num_sanity_val_steps=0,
+        precision=16 if a.fp16 else 32,
+        logger=(
+            CSVLogger(name=a.exp_name, save_dir=a.save_path, version=version),
+            TensorBoardLogger(name=a.exp_name, save_dir=a.save_path, version=version),
+        ),  # type: ignore
+    )
+
+    logging.info("Starting training")
+    trainer.fit(
+        model=pl_model,
+    )
+    save_conf_matrix(
+        confusion_matrix=pl_model.val_metrics["all"]['confusion_matrix'].compute(),
+        csv_logger=trainer.loggers[0]
+    )
+
+    return pl_model.model, test_ds
