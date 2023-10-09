@@ -10,6 +10,8 @@ from src.utils.onnx import export_to_onnx
 from src.utils.training import compute_kfold_scores, train_pipeline
 from src.utils.utils import parse_args
 
+logging.getLogger().setLevel(logging.DEBUG)
+
 
 def main(a):
     logging.info("Getting data")
