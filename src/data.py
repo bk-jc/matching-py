@@ -40,6 +40,9 @@ def get_data(a, data_filepath):
             if not a.allow_half_label and entry[3] == 0.5:
                 continue
 
+            if type(entry[0]) != str or type(entry[1]) != str:
+                continue  # TODO should probly be converted to empty list
+
             sample = {
                 "cv": {
                     "skills": entry[0].split(",") if entry[0] else [],

@@ -36,6 +36,7 @@ def parse_args(args) -> argparse.Namespace:
     parser.add_argument("--max_skills", type=int, required=False, default=20)
     parser.add_argument("--max_len", type=int, required=False, default=64,
                         help="Max number of tokens for an input (job title or skill)")
+    parser.add_argument("--cache_embeddings", type=bool, required=False, default=True)
 
     # Training options
     parser.add_argument("--train_batch_size", type=int, required=False, default=4)

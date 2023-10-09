@@ -168,6 +168,7 @@ class Jarvis(nn.Module):
         self.max_skills = a.max_skills
         self.num_heads = a.num_heads
         self.use_skill_weights = a.use_skill_weights
+        self.cache_embeddings = a.cache_embeddings
 
         skill_attention_config = copy.deepcopy(self.base_model.config)
         skill_attention_config.position_embedding_type = None  # Disable pos embeddings
@@ -181,16 +182,37 @@ class Jarvis(nn.Module):
                 b=self.base_model.config.initializer_range / 2
             )
 
+        if self.cache_embeddings:
+            self.cache = {}
+
         self.cos = nn.CosineSimilarity(dim=1, eps=1e-12)
 
     def tokenize_document(self, document):
 
-        document["skills"] = self.tokenizer(
-            document["skills"],
-            max_length=self.max_len,
-            return_tensors='pt',
-            padding="max_length"
-        ).data
+        if self.cache_embeddings:
+            skills = []
+            for skill in document["skills"]:
+                if skill in self.cache:
+                    skills.append(self.cache[skill])
+                else:
+                    embedding = self.tokenizer(
+                        skill,
+                        max_length=self.max_len,
+                        return_tensors='pt',
+                        padding="max_length"
+                    ).data
+                    self.cache[skill] = embedding
+                    skills.append(embedding)
+
+            document["skills"] = {key: torch.cat([item[key] for item in skills], dim=0) for key in skills[0].keys()}
+
+        else:
+            document["skills"] = self.tokenizer(
+                document["skills"],
+                max_length=self.max_len,
+                return_tensors='pt',
+                padding="max_length"
+            ).data
 
         return document
 
