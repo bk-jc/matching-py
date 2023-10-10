@@ -83,9 +83,7 @@ def compute_kfold_scores(a, version):
     cvs_paths = [os.path.join(base_path, f"fold{fold}", "metrics.csv") for fold in range(1, a.n_splits + 1)]
     fold_scores = []
     for csv_path in cvs_paths:
-        csv_file = pd.read_csv(csv_path)
-
-        fold_score = csv_file[a.score_metric].min() if a.lower_is_better else csv_file[a.score_metric].max()
+        fold_score = get_csv_score(a, csv_path)
         fold_scores.append(fold_score)
 
     kfold_score = np.mean(fold_scores)
@@ -99,8 +97,16 @@ def compute_kfold_scores(a, version):
              ])
         writer.writerow([a.score_metric, kfold_score])
 
+    return kfold_score
 
-def train_pipeline(a, test_data, train_data, version, fold=None):
+
+def get_csv_score(a, csv_path):
+    csv_file = pd.read_csv(csv_path)
+    fold_score = csv_file[a.score_metric].min() if a.lower_is_better else csv_file[a.score_metric].max()
+    return fold_score
+
+
+def train_pipeline(a, test_data, train_data, fold=None):
     logging.info("Preprocessing data")
     train_ds = preprocess_dataset(Dataset.from_list(train_data), a, train=True)
     test_ds = preprocess_dataset(Dataset.from_list(test_data), a, train=False)
@@ -109,6 +115,7 @@ def train_pipeline(a, test_data, train_data, version, fold=None):
     pl_model = get_model(a, train_ds, test_ds)
 
     logging.info("Loading trainer")
+    version = a.version
     if fold is not None:
         version += f"/fold{fold + 1}"
     trainer = Trainer(

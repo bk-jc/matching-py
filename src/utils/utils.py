@@ -1,4 +1,5 @@
 import argparse
+from datetime import datetime
 from pathlib import Path
 
 
@@ -15,6 +16,8 @@ def str2bool(v: str) -> bool:
 
 def parse_args(args) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
+
+    # TODO add seed as arg
 
     # Data options
     parser.add_argument("--raw_train_path", help='Path of the raw train data', type=str, required=False,
@@ -51,14 +54,17 @@ def parse_args(args) -> argparse.Namespace:
     parser.add_argument("--es_patience", type=float, required=False, default=5)
     parser.add_argument("--fp16", type=bool, required=False, default=False)
 
-    # Cross-validation
+    # Cross-validation & grid search
     parser.add_argument("--n_splits", type=int, required=False, default=0,
                         help="Number of CV splits. Setting to 0 means no cross-validation.")
     parser.add_argument("--score_metric", type=str, required=False, default="val_all_f1")
     parser.add_argument("--lower_is_better", type=bool, required=False, default=False)
+    parser.add_argument("--optuna_path", type=str, required=False, default="")
 
     # Artefact options
     parser.add_argument("--save_path", type=str, required=False, default="output")
     parser.add_argument("--exp_name", type=str, required=False, default="develop")
+
+    parser.add_argument("--version", type=str, required=False, default=datetime.now().strftime('%Y_%m_%d_%H_%M_%S'))
 
     return parser.parse_args(args)
