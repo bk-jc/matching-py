@@ -187,50 +187,17 @@ class Jarvis(nn.Module):
 
         self.cos = nn.CosineSimilarity(dim=1, eps=1e-12)
 
-    def tokenize_document(self, document):
-
-        if self.cache_embeddings:
-            skills = []
-            for skill in document["skills"]:
-                if skill in self.cache:
-                    skills.append(self.cache[skill])
-                else:
-                    embedding = self.tokenizer(
-                        skill,
-                        max_length=self.max_len,
-                        return_tensors='pt',
-                        padding="max_length"
-                    ).data
-                    self.cache[skill] = embedding
-                    skills.append(embedding)
-
-            document["skills"] = {key: torch.cat([item[key] for item in skills], dim=0) for key in skills[0].keys()}
-
-        else:
-            document["skills"] = self.tokenizer(
-                document["skills"],
-                max_length=self.max_len,
-                return_tensors='pt',
-                padding="max_length"
-            ).data
-
-        return document
-
     def get_document_embedding(self, documents):
-
-        # Tokenize the documents
-        documents = [self.tokenize_document(d) for d in documents]
 
         # Return untrained model output
         if self.untrained:
-            document_skills = [self.base_model(**doc["skills"]).pooler_output for doc in
-                               documents]
-            return document_skills[0].mean(axis=0).reshape(1, document_skills[0].shape[-1])
+            raise NotImplementedError(
+                "Untrained mode was made broken during parallelization of the forward pass. If this is of interest, "
+                "ask Bas for help fixing it. Essentially it requires a function to return pooled document embeddings.")
 
-        # Get skill embeddings
-        document_skills = [self.base_model(**doc["skills"]).last_hidden_state[:, 0] for doc in documents]
+        document_skills = self.get_doc_embeddings(documents)
 
-        # Pad to a tensor and get attention masks
+        # Pad to a tensor and get attention masks TODO parallelize
         document_tensor = torch.cat([F.pad(doc, (0, 0, 0, self.max_skills - doc.shape[0])).unsqueeze(0)
                                      for doc in document_skills])
         attention_mask = torch.cat([F.pad(torch.ones(doc.shape[0]), (0, self.max_skills - doc.shape[0])).unsqueeze(0)
@@ -265,6 +232,44 @@ class Jarvis(nn.Module):
             document_embeddings = torch.max(document_tensor, axis=1)
 
         return document_embeddings
+
+    def get_doc_embeddings(self, documents):
+        document_embeddings = []
+        for doc in documents:
+            doc_emb = self.get_skill_embeddings(doc)
+            document_embeddings.append(doc_emb)
+        return document_embeddings
+
+    def get_skill_embeddings(self, document):
+
+        if self.cache_embeddings:
+            skills = []
+            for skill in document["skills"]:
+                if skill in self.cache:
+                    skills.append(self.cache[skill])
+                else:
+                    tokens = self.tokenizer(
+                        skill,
+                        max_length=self.max_len,
+                        return_tensors='pt',
+                        padding="max_length"
+                    ).data
+                    embedding = self.base_model(**tokens).last_hidden_state[:, 0]
+                    self.cache[skill] = embedding
+                    skills.append(embedding)
+
+            skills = torch.cat(skills, dim=0)
+
+        else:
+            document["skills"] = self.tokenizer(
+                document["skills"],
+                max_length=self.max_len,
+                return_tensors='pt',
+                padding="max_length"
+            ).data
+            skills = self.base_model(**document["skills"]).last_hidden_state[:, 0]
+
+        return skills
 
     def forward(self, cv, job, label=None):
 

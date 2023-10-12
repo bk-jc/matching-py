@@ -62,7 +62,8 @@ def get_data(a, data_filepath):
     return data
 
 
-def preprocess_dataset(ds, a, train):
+def preprocess_data(data, a, train):
+    ds = Dataset.from_list(data)
     ds = ignore_empty_skill_docs(ds)
     if train:
         batch_size = a.train_batch_size

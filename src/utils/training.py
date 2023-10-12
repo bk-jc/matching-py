@@ -7,13 +7,12 @@ import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
 import torch
-from datasets import Dataset
 from lightning.pytorch.loggers import CSVLogger, TensorBoardLogger
 from matplotlib import pyplot as plt
 from pytorch_lightning import Trainer
 from transformers import TrainerCallback
 
-from src.data import preprocess_dataset
+from src.data import preprocess_data
 from src.model import get_model
 
 
@@ -108,8 +107,8 @@ def get_csv_score(a, csv_path):
 
 def train_pipeline(a, test_data, train_data, fold=None):
     logging.info("Preprocessing data")
-    train_ds = preprocess_dataset(Dataset.from_list(train_data), a, train=True)
-    test_ds = preprocess_dataset(Dataset.from_list(test_data), a, train=False)
+    train_ds = preprocess_data(train_data, a, train=True)
+    test_ds = preprocess_data(test_data, a, train=False)
 
     logging.info("Loading model")
     pl_model = get_model(a, train_ds, test_ds)
@@ -130,6 +129,7 @@ def train_pipeline(a, test_data, train_data, fold=None):
             CSVLogger(name=a.exp_name, save_dir=a.save_path, version=version),
             TensorBoardLogger(name=a.exp_name, save_dir=a.save_path, version=version),
         ),  # type: ignore
+        check_val_every_n_epoch=None,
     )
 
     logging.info("Starting training")

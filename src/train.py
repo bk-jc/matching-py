@@ -11,9 +11,7 @@ from sklearn import model_selection
 from src.data import get_data
 from src.utils.onnx import export_to_onnx
 from src.utils.training import compute_kfold_scores, train_pipeline, get_csv_score
-from src.utils.utils import parse_args
-
-logging.getLogger().setLevel(logging.DEBUG)
+from src.utils.utils import parse_args, init_logger_and_seed
 
 
 def run_experiment(a):
@@ -76,6 +74,8 @@ def grid_search(a):
 
 
 def main(args):
+    init_logger_and_seed(args)
+
     if args.optuna_path:
         grid_search(args)
     else:

@@ -1,6 +1,17 @@
 import argparse
+import logging
 from datetime import datetime
 from pathlib import Path
+
+import lightning
+
+log_levels = {
+    'DEBUG': logging.DEBUG,
+    'INFO': logging.INFO,
+    'WARNING': logging.WARNING,
+    'ERROR': logging.ERROR,
+    'CRITICAL': logging.CRITICAL
+}
 
 
 def str2bool(v: str) -> bool:
@@ -17,13 +28,15 @@ def str2bool(v: str) -> bool:
 def parse_args(args) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
 
-    # TODO add seed as arg
+    parser.add_argument('--log_level', default='INFO', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+                        help='Set the log level')
 
     # Data options
     parser.add_argument("--raw_train_path", help='Path of the raw train data', type=str, required=False,
                         default=str(Path(__file__).parent.parent.parent / 'data' / 'mock' / 'sample.json'))
     parser.add_argument("--raw_test_path", help='Path of the raw test data', type=str, required=False,
                         default=str(Path(__file__).parent.parent.parent / 'data' / 'mock' / 'sample.json'))
+    parser.add_argument("--seed", type=int, required=False, default=1997)
     parser.add_argument("--use_skill_weights", type=bool, required=False, default=False)
     parser.add_argument("--allow_half_label", type=bool, required=False, default=False)
     parser.add_argument("--negative_sampling", type=bool, required=False, default=True)
@@ -68,3 +81,9 @@ def parse_args(args) -> argparse.Namespace:
     parser.add_argument("--version", type=str, required=False, default=datetime.now().strftime('%Y_%m_%d_%H_%M_%S'))
 
     return parser.parse_args(args)
+
+
+def init_logger_and_seed(args):
+    logging.info("Setting up")
+    lightning.seed_everything(args.seed)
+    logging.getLogger().setLevel(log_levels[args.log_level])
