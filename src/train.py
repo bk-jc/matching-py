@@ -6,11 +6,10 @@ import sys
 import numpy as np
 import optuna
 import yaml
-from sklearn import model_selection
 
 from src.data import get_data
 from src.utils.onnx import export_to_onnx
-from src.utils.training import compute_kfold_scores, train_pipeline, get_csv_score
+from src.utils.training import compute_kfold_scores, train_pipeline, get_csv_score, get_kfold_and_groups
 from src.utils.utils import parse_args, init_logger_and_seed
 
 
@@ -21,9 +20,9 @@ def run_experiment(a):
 
     if a.n_splits > 1:
         logging.info(f"Splitting in {a.n_splits} train-test splits")
-        kfold = model_selection.KFold(n_splits=a.n_splits)
+        kfold, groups = get_kfold_and_groups(a, data=train_data)
 
-        for fold, (train_ids, val_ids) in enumerate(kfold.split(train_data)):
+        for fold, (train_ids, val_ids) in enumerate(kfold.split(train_data, groups=groups)):
             logging.info(f"Fold {fold + 1} out of {a.n_splits}")
             train_split = np.array(train_data)[train_ids].tolist()
             test_split = np.array(train_data)[val_ids].tolist()

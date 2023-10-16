@@ -10,6 +10,7 @@ import torch
 from lightning.pytorch.loggers import CSVLogger, TensorBoardLogger
 from matplotlib import pyplot as plt
 from pytorch_lightning import Trainer
+from sklearn import model_selection
 from transformers import TrainerCallback
 
 from src.data import preprocess_data
@@ -142,3 +143,13 @@ def train_pipeline(a, test_data, train_data, fold=None):
     )
 
     return pl_model.model, test_ds
+
+
+def get_kfold_and_groups(a, data):
+    if a.group_hashed:
+        kfold = model_selection.GroupKFold(n_splits=a.n_splits)
+        groups = [hash(d["cv"]["jobtitle"] + "".join(d["cv"]["skills"])) for d in data]
+    else:
+        kfold = model_selection.KFold(n_splits=a.n_splits)
+        groups = None
+    return kfold, groups
