@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 from datetime import datetime
 from pathlib import Path
 
@@ -66,6 +67,9 @@ def parse_args(args) -> argparse.Namespace:
     parser.add_argument("--es_delta", type=float, required=False, default=0.01)
     parser.add_argument("--es_patience", type=float, required=False, default=5)
     parser.add_argument("--fp16", type=bool, required=False, default=False)
+    parser.add_argument("--n_workers", type=int, required=False, default=0)
+    parser.add_argument("--loss_fn", type=str, required=False, default="contrastive", choices=["contrastive", "cosine"])
+    parser.add_argument("--n_thresholds", type=int, required=False, default="100")
 
     # Cross-validation & grid search
     parser.add_argument("--n_splits", type=int, required=False, default=0,
@@ -76,7 +80,7 @@ def parse_args(args) -> argparse.Namespace:
     parser.add_argument("--optuna_path", type=str, required=False, default="")
 
     # Artefact options
-    parser.add_argument("--save_path", type=str, required=False, default="output")
+    parser.add_argument("--save_path", type=str, required=False, default=Path(__file__).parent.parent.parent / "output")
     parser.add_argument("--exp_name", type=str, required=False, default="develop")
 
     parser.add_argument("--version", type=str, required=False, default=datetime.now().strftime('%Y_%m_%d_%H_%M_%S'))
@@ -86,5 +90,7 @@ def parse_args(args) -> argparse.Namespace:
 
 def init_logger_and_seed(args):
     logging.info("Setting up")
+    if args.n_workers:
+        os.environ["TOKENIZERS_PARALLELISM"] = "true"
     lightning.seed_everything(args.seed)
     logging.getLogger().setLevel(log_levels[args.log_level])

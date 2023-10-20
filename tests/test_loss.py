@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from src.model import contrastive_loss
+from src.losses import contrastive_loss
 
 FP_TOLERANCE = 1e-6
 

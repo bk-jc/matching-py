@@ -26,7 +26,7 @@ setup:
 	fi
 
 tensorboard:
-	tensorboard --logdir ./src/output
+	tensorboard --logdir ./output
 
 update:
 	$(call output, "UPDATE $(projectName)")

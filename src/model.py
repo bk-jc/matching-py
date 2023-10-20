@@ -1,13 +1,12 @@
-import copy
-
 import pytorch_lightning
 import torch
-import torch.nn.functional as F
 import torchmetrics
+from sklearn.metrics import f1_score
 from torch import nn as nn
-from transformers import AutoModel, AutoTokenizer
+from transformers import AutoTokenizer
 from transformers import get_linear_schedule_with_warmup
-from transformers.models.bert.modeling_bert import BertLayer
+
+from src.jarvis import Jarvis
 
 
 def get_model_fn(a):
@@ -18,20 +17,28 @@ def get_model_fn(a):
 
 
 class ModuleJarvis(pytorch_lightning.LightningModule):
+    """PyTorch Lightning wrapper for Jarvis model, such that it is compatible with Lightning trainer"""
+
     def __init__(
             self,
             base_model,
             lr,
+            weight_decay,
             n_steps,
+            n_thresholds,
             train_ds=None,
             val_ds=None,
     ):
         super().__init__()
         self.model = base_model
         self.lr = lr
+        self.weight_decay = weight_decay
         self.n_steps = n_steps
         self.train_ds = train_ds
         self.val_ds = val_ds
+        self.n_thresholds = n_thresholds
+
+        self.threshold = 0.5
 
         # Freeze transformer model
         for p in self.model.base_model.parameters():
@@ -54,6 +61,12 @@ class ModuleJarvis(pytorch_lightning.LightningModule):
         self.train_step_loss = []
         self.val_step_loss = []
 
+        # For getting threshold
+        self.val_sims = []
+        self.val_labels = []
+        self.val_batches = []
+        self.val_outputs = []
+
     @staticmethod
     def get_metric_dict():
         return {
@@ -65,18 +78,37 @@ class ModuleJarvis(pytorch_lightning.LightningModule):
 
     def update_metrics(self, batch, outputs, metrics):
         target, preds = batch['label'], outputs['sim']
-        preds = (preds > 0.5).to(torch.int64)  # threshold the predictions
+        preds = (preds > self.threshold).to(torch.int64)  # threshold the predictions
         for split_name, filter_fn in self.metric_splits.items():
             filtered_idx = filter_fn(batch)
             if True in filtered_idx:
                 for metric in metrics[split_name].values():
                     metric(preds=preds[filtered_idx], target=target[filtered_idx])
 
-    def log_metrics(self, metrics):
+    def log_metrics(self, metrics, prefix):
         for split_name in self.metric_splits.keys():
             for metric_key, metric in metrics[split_name].items():
                 if metric_key != "confusion_matrix":
-                    self.log(f"val_{split_name}_{metric_key}", metric.compute())
+                    self.log(f"{prefix}_{split_name}_{metric_key}", metric.compute())
+                else:
+                    conf_matrix = metric.confmat
+
+                    TP = conf_matrix[1, 1]
+                    TN = conf_matrix[0, 0]
+                    FP = conf_matrix[0, 1]
+                    FN = conf_matrix[1, 0]
+
+                    # Compute FPR and FNR
+                    FPR = FP / (FP + TN)
+                    FNR = FN / (FN + TP)
+
+                    self.log(f"{prefix}_{split_name}_FPR", FPR)
+                    self.log(f"{prefix}_{split_name}_FNR", FNR)
+
+    def clear_metrics(self, metrics):
+        for split_name in self.metric_splits.keys():
+            for metric_key, metric in metrics[split_name].items():
+                metric.reset()
 
     def training_step(self, batch, batch_idx):
         outputs = self.model(**batch)
@@ -86,19 +118,47 @@ class ModuleJarvis(pytorch_lightning.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         outputs = self.model(**batch)
-        self.update_metrics(batch, outputs, self.val_metrics)
         self.val_step_loss.append(outputs['loss'])
+        self.val_sims += outputs['sim'].tolist()
+        self.val_labels += batch['label'].tolist()
+        self.val_batches.append(batch)
+        self.val_outputs.append(outputs)
         return outputs
 
     def on_train_epoch_end(self) -> None:
-        self.log_metrics(self.train_metrics)
+        self.log_metrics(self.train_metrics, prefix="train")
         self.log("train_loss", torch.stack(self.train_step_loss).mean())
         self.train_step_loss.clear()
 
     def on_validation_epoch_end(self) -> None:
-        self.log_metrics(self.val_metrics)
+        self.update_threshold()
+        for batch, outputs in list(zip(self.val_batches, self.val_outputs)):
+            self.update_metrics(batch, outputs, self.val_metrics)
+        self.log_metrics(self.val_metrics, prefix="val")
         self.log("val_loss", torch.stack(self.val_step_loss).mean())
         self.val_step_loss.clear()
+
+        # self.clear_metrics(self.val_metrics)
+        self.val_sims = []
+        self.val_labels = []
+        self.val_outputs = []
+        self.val_labels = []
+
+    def update_threshold(self):
+
+        best_threshold = 0
+        best_f1 = 0
+
+        for value in range(0, self.n_thresholds):
+            threshold = value / self.n_thresholds
+
+            f1 = f1_score(self.val_labels, [1 if p >= threshold else 0 for p in self.val_sims])
+
+            if f1 > best_f1:
+                best_f1 = f1
+                best_threshold = threshold
+
+        self.threshold = best_threshold
 
     def train_dataloader(self):
         return self.train_ds
@@ -112,6 +172,7 @@ class ModuleJarvis(pytorch_lightning.LightningModule):
             lr=self.lr,
             betas=(0.9, 0.95),
             eps=1e-8,
+            weight_decay=self.weight_decay,
         )
         scheduler = get_linear_schedule_with_warmup(
             optimizer=optimizer,
@@ -129,165 +190,9 @@ class ModuleJarvis(pytorch_lightning.LightningModule):
 
 def get_model(a, train_ds, val_ds):
     base_model = Jarvis(a=a, model_name=a.model_name, emb_size=300, tokenizer=get_tokenizer(a))
-    return ModuleJarvis(base_model=base_model, lr=a.learning_rate, n_steps=a.train_steps, train_ds=train_ds,
-                        val_ds=val_ds)
+    return ModuleJarvis(base_model=base_model, lr=a.learning_rate, weight_decay=a.weight_decay, n_steps=a.train_steps,
+                        n_thresholds=a.n_thresholds, train_ds=train_ds, val_ds=val_ds)
 
 
 def get_tokenizer(a):
     return AutoTokenizer.from_pretrained(a.model_name)
-
-
-class MeanPooling(nn.Module):
-    def __init__(self):
-        super(MeanPooling, self).__init__()
-
-    def forward(self, last_hidden_state, attention_mask):
-        input_mask_expanded = attention_mask.unsqueeze(-1).expand(last_hidden_state.size()).float()
-        sum_embeddings = torch.sum(last_hidden_state * input_mask_expanded, 1)
-        sum_mask = input_mask_expanded.sum(1)
-        sum_mask = torch.clamp(sum_mask, min=1e-9)
-        mean_embeddings = sum_embeddings / sum_mask
-        return mean_embeddings
-
-
-class Jarvis(nn.Module):
-
-    def __init__(self, a, model_name, emb_size, tokenizer):
-        super(Jarvis, self).__init__()
-
-        self.untrained = a.untrained
-        self.pooling_mode = a.pooling_mode
-
-        self.base_model = AutoModel.from_pretrained(model_name)
-        self.dropout = nn.Dropout(a.dropout_rate)
-        self.pooler = MeanPooling()
-        self.readout = nn.Linear(self.base_model.config.hidden_size, emb_size)  # TODO integrate in model
-        self.loss = nn.CrossEntropyLoss()
-        self.tokenizer = tokenizer
-        self.max_len = a.max_len
-        self.max_skills = a.max_skills
-        self.num_heads = a.num_heads
-        self.use_skill_weights = a.use_skill_weights
-        self.cache_embeddings = a.cache_embeddings
-
-        skill_attention_config = copy.deepcopy(self.base_model.config)
-        skill_attention_config.position_embedding_type = None  # Disable pos embeddings
-
-        if a.pooling_mode == "cls":
-            self.skill_attention = BertLayer(skill_attention_config)
-            self.skill_pooling = torch.nn.Parameter(torch.Tensor(self.base_model.config.hidden_size))
-            torch.nn.init.uniform_(
-                self.skill_pooling,
-                a=-1 * self.base_model.config.initializer_range / 2,
-                b=self.base_model.config.initializer_range / 2
-            )
-
-        if self.cache_embeddings:
-            self.cache = {}
-
-        self.cos = nn.CosineSimilarity(dim=1, eps=1e-12)
-
-    def get_document_embedding(self, documents):
-
-        # Return untrained model output
-        if self.untrained:
-            raise NotImplementedError(
-                "Untrained mode was made broken during parallelization of the forward pass. If this is of interest, "
-                "ask Bas for help fixing it. Essentially it requires a function to return pooled document embeddings.")
-
-        document_skills = self.get_doc_embeddings(documents)
-
-        # Pad to a tensor and get attention masks TODO parallelize
-        document_tensor = torch.cat([F.pad(doc, (0, 0, 0, self.max_skills - doc.shape[0])).unsqueeze(0)
-                                     for doc in document_skills])
-        attention_mask = torch.cat([F.pad(torch.ones(doc.shape[0]), (0, self.max_skills - doc.shape[0])).unsqueeze(0)
-                                    for doc in document_skills])
-
-        # Multiply embeddings with skill weights
-        if self.use_skill_weights:
-            skill_weight_tensor = torch.cat(
-                [F.pad(torch.tensor([1.] + d["weights"]), (0, self.max_skills - 1 - len(d["weights"]))).unsqueeze(0)
-                 for d in documents])
-            document_tensor *= skill_weight_tensor.unsqueeze(-1)
-
-        if self.pooling_mode == "cls":
-
-            # Add skill pooling token
-            pooling = self.skill_pooling.view(1, 1, -1).repeat(len(documents), 1, 1)
-            document_tensor = torch.concat([pooling, document_tensor], dim=1)
-            attention_mask = torch.concat([torch.ones(len(documents), 1), attention_mask], dim=1)
-            attention_mask = attention_mask.view(len(documents), 1, 1, -1)
-
-            # Get skill interactions via BERT layer (output type is Tuple; take first index to get the Tensor)
-            skill_interactions = self.skill_attention(document_tensor, attention_mask=attention_mask)[0]
-
-            # Pool skill interactions (CLS token)
-            document_embeddings = skill_interactions[:, 0]
-
-        elif self.pooling_mode == "max":
-
-            mask = attention_mask.unsqueeze(-1).repeat(1, 1, self.base_model.config.hidden_size)
-            document_tensor[mask == 0] = -torch.inf
-
-            document_embeddings = torch.max(document_tensor, axis=1)
-
-        return document_embeddings
-
-    def get_doc_embeddings(self, documents):
-        document_embeddings = []
-        for doc in documents:
-            doc_emb = self.get_skill_embeddings(doc)
-            document_embeddings.append(doc_emb)
-        return document_embeddings
-
-    def get_skill_embeddings(self, document):
-
-        if self.cache_embeddings:
-            skills = []
-            for skill in document["skills"]:
-                if skill in self.cache:
-                    skills.append(self.cache[skill])
-                else:
-                    tokens = self.tokenizer(
-                        skill,
-                        max_length=self.max_len,
-                        return_tensors='pt',
-                        padding="max_length"
-                    ).data
-                    embedding = self.base_model(**tokens).last_hidden_state[:, 0]
-                    self.cache[skill] = embedding
-                    skills.append(embedding)
-
-            skills = torch.cat(skills, dim=0)
-
-        else:
-            document["skills"] = self.tokenizer(
-                document["skills"],
-                max_length=self.max_len,
-                return_tensors='pt',
-                padding="max_length"
-            ).data
-            skills = self.base_model(**document["skills"]).last_hidden_state[:, 0]
-
-        return skills
-
-    def forward(self, cv, job, label=None):
-
-        cv_emb = self.get_document_embedding(cv)
-        job_emb = self.get_document_embedding(job)
-
-        sim = self.cos(cv_emb, job_emb)
-        if label is None:
-            return sim
-        else:
-            loss = contrastive_loss(torch.tensor(label), sim)
-            return {"loss": loss, "sim": sim}
-
-
-def contrastive_loss(y, sim, margin=0.5):
-    """
-    Contrastive loss from Hadsell-et-al.'06
-    https://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf
-    """
-    dist = 1 - sim
-    return torch.mean(y * 2 * dist + (1 - y) * 2 * F.relu(margin - dist))

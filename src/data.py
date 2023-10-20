@@ -72,7 +72,10 @@ def preprocess_data(data, a, train):
     else:
         batch_size = a.val_batch_size
 
-    dataloader = DataLoader(ds, batch_size=batch_size, collate_fn=collate_fn)
+    dl_kwargs = {}
+    if a.n_workers:
+        dl_kwargs["num_workers"] = a.n_workers
+    dataloader = DataLoader(ds, batch_size=batch_size, collate_fn=collate_fn, shuffle=train, **dl_kwargs)
     return dataloader
 
 
