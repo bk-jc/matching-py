@@ -37,8 +37,11 @@ def get_data(a, data_filepath):
         data = []
         for _, entry in csv_data.iterrows():
 
-            if not a.allow_half_label and entry[3] == 0.5:
-                continue
+            if entry[3] == 0.5:
+                if not a.allow_half_label:
+                    continue
+                # Assume B-bucket is A-bucket
+                entry[3] = 1
 
             if type(entry[0]) != str or type(entry[1]) != str:
                 continue  # TODO should probly be converted to empty list

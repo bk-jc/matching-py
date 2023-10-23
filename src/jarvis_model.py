@@ -2,7 +2,7 @@ import copy
 
 import torch
 from torch import nn as nn
-from torch.nn import functional as F
+from torch.nn.functional import pad
 from transformers import AutoModel, BertLayer
 
 from src.losses import contrastive_loss, cos_loss
@@ -14,12 +14,15 @@ class Jarvis(nn.Module):
     def __init__(self, a, model_name, emb_size, tokenizer):
         super(Jarvis, self).__init__()
 
+        # validate args
+        if a.n_ffn_blocks_emd < 1 or a.n_ffn_blocks_readout < 1:
+            raise ValueError(f"Require at least 1 FFN blocks for embeddings and readout")
+
         self.untrained = a.untrained
         self.pooling_mode = a.pooling_mode
 
         self.base_model = AutoModel.from_pretrained(model_name)
         self.dropout = nn.Dropout(a.dropout_rate)
-        self.readout = nn.Linear(self.base_model.config.hidden_size, emb_size)  # TODO integrate in model
         self.loss = nn.CrossEntropyLoss()
         self.tokenizer = tokenizer
         self.max_len = a.max_len
@@ -39,18 +42,26 @@ class Jarvis(nn.Module):
                 a=-1 * self.base_model.config.initializer_range / 2,
                 b=self.base_model.config.initializer_range / 2
             )
-        elif a.pooling_mode == "max":
-            self.dense = nn.Linear(self.base_model.config.hidden_size, self.base_model.config.hidden_size)
-            self.relu = nn.ReLU()
-            self.dense_2 = nn.Linear(self.base_model.config.hidden_size, self.base_model.config.hidden_size)
 
-        self.loss_fn = a.loss_fn
         if a.loss_fn == "contrastive":
             self.loss_fn = contrastive_loss
         elif a.loss_fn == "cosine":
             self.loss_fn = cos_loss
 
-        self.dropout = nn.Dropout(a.dropout_rate)
+        self.ffn_emb = FFN(
+            input_dim=self.base_model.config.hidden_size,
+            output_dim=a.hidden_dim,
+            hidden_dim=a.hidden_dim,
+            n_blocks=a.n_ffn_blocks_emd,
+            dropout_rate=a.dropout_rate,
+        )
+        self.ffn_readout = FFN(
+            input_dim=a.hidden_dim,
+            output_dim=a.readout_dim,
+            hidden_dim=a.hidden_dim,
+            n_blocks=a.n_ffn_blocks_emd,
+            dropout_rate=a.dropout_rate,
+        )
 
         if self.cache_embeddings:
             self.cache = {}
@@ -68,17 +79,24 @@ class Jarvis(nn.Module):
         document_skills = self.get_doc_embeddings(documents)
 
         # Pad to a tensor and get attention masks TODO parallelize
-        document_tensor = torch.cat([F.pad(doc, (0, 0, 0, self.max_skills - doc.shape[0])).unsqueeze(0)
+        document_tensor = torch.cat([pad(doc, (0, 0, 0, self.max_skills - doc.shape[0])).unsqueeze(0)
                                      for doc in document_skills])
-        attention_mask = torch.cat([F.pad(torch.ones(doc.shape[0]), (0, self.max_skills - doc.shape[0])).unsqueeze(0)
+        attention_mask = torch.cat([pad(torch.ones(doc.shape[0]), (0, self.max_skills - doc.shape[0])).unsqueeze(0)
                                     for doc in document_skills])
 
         # Multiply embeddings with skill weights
         if self.use_skill_weights:
             skill_weight_tensor = torch.cat(
-                [F.pad(torch.tensor([1.] + d["weights"]), (0, self.max_skills - 1 - len(d["weights"]))).unsqueeze(0)
+                [pad(torch.tensor([1.] + d["weights"]), (0, self.max_skills - 1 - len(d["weights"]))).unsqueeze(0)
                  for d in documents])
             document_tensor *= skill_weight_tensor.unsqueeze(-1)
+
+        batch_size, n_skills = document_tensor.shape[:2]
+
+        # Dense layer
+        document_tensor = document_tensor.view(batch_size * n_skills, -1)
+        document_tensor = self.ffn_emb(document_tensor)
+        document_tensor = document_tensor.view(batch_size, n_skills, -1)
 
         if self.pooling_mode == "cls":
 
@@ -92,26 +110,30 @@ class Jarvis(nn.Module):
             skill_interactions = self.skill_attention(document_tensor, attention_mask=attention_mask)[0]
 
             # Pool skill interactions (CLS token)
-            document_embeddings = skill_interactions[:, 0]
+            document_tensor = skill_interactions[:, 0]
 
         elif self.pooling_mode == "max":
 
-            # Dense layer  TODO make configurable with custom FFN classes
-            shape = document_tensor.shape
-            document_tensor = document_tensor.view(-1, *shape[2:])
-            document_tensor = self.dense(document_tensor)
-            document_tensor = self.relu(document_tensor)
-            document_tensor = self.dense_2(document_tensor)
-            document_tensor = document_tensor.view(*shape)
-
-            mask = attention_mask.unsqueeze(-1).repeat(1, 1, self.base_model.config.hidden_size)
+            mask = attention_mask.unsqueeze(-1).repeat(1, 1, document_tensor.shape[-1])
             document_tensor[mask == 0] = -torch.inf
+            document_tensor = torch.max(document_tensor, axis=1).values
 
-            document_embeddings = torch.max(document_tensor, axis=1).values
+        elif self.pooling_mode == "mean":
 
-        document_embeddings = self.dropout(document_embeddings)
+            mask = attention_mask.unsqueeze(-1).repeat(1, 1, document_tensor.shape[-1])
+            document_tensor = document_tensor * mask
 
-        return document_embeddings
+            # Compute sum over the sequence_length axis
+            sum_pooled = document_tensor.sum(dim=1)
+
+            # Compute the count of non-zero mask values for each position
+            non_zero_counts = attention_mask.sum(dim=1, keepdim=True).clamp_min(1e-12)  # Avoid division by zero
+            document_tensor = sum_pooled / non_zero_counts
+
+        # Dense layer
+        document_tensor = self.ffn_readout(document_tensor)
+
+        return document_tensor
 
     def get_doc_embeddings(self, documents):
         document_embeddings = []
@@ -162,3 +184,44 @@ class Jarvis(nn.Module):
         else:
             loss = self.loss_fn(label, sim)
             return {"loss": loss, "sim": sim}
+
+
+class FeedForwardBlock(nn.Module):
+    """A single block for the FFN containing Dense, LayerNorm, ReLU, and Dropout layers."""
+
+    def __init__(self, in_dim, out_dim, dropout_rate):
+        super(FeedForwardBlock, self).__init__()
+
+        self.dense = nn.Linear(in_dim, out_dim)
+        self.norm = nn.LayerNorm(out_dim)
+        self.activation = nn.ReLU()
+        self.dropout = nn.Dropout(dropout_rate)
+
+    def forward(self, x):
+        out = self.dense(x)
+        out = self.norm(out)
+        out = self.activation(out)
+        return self.dropout(out)
+
+
+class FFN(nn.Module):
+    """Feedforward Neural Network with configurable blocks."""
+
+    def __init__(self, input_dim, hidden_dim, output_dim, n_blocks, dropout_rate):
+        super(FFN, self).__init__()
+
+        layers = []
+        in_features = input_dim
+
+        # Add n-1 blocks with given hidden dimensions
+        for _ in range(n_blocks - 1):
+            layers.append(FeedForwardBlock(in_features, hidden_dim, dropout_rate))
+            in_features = hidden_dim
+
+        # Add the last block with output dimensions
+        layers.append(FeedForwardBlock(in_features, output_dim, dropout_rate))
+
+        self.model = nn.Sequential(*layers)
+
+    def forward(self, x):
+        return self.model(x)

@@ -2,11 +2,10 @@ import pytorch_lightning
 import torch
 import torchmetrics
 from sklearn.metrics import f1_score
-from torch import nn as nn
 from transformers import AutoTokenizer
 from transformers import get_linear_schedule_with_warmup
 
-from src.jarvis import Jarvis
+from src.jarvis_model import Jarvis
 
 
 def get_model_fn(a):
@@ -38,7 +37,7 @@ class ModuleJarvis(pytorch_lightning.LightningModule):
         self.val_ds = val_ds
         self.n_thresholds = n_thresholds
 
-        self.threshold = 0.5
+        self.threshold = 0.5  # Initial threshold
 
         # Freeze transformer model
         for p in self.model.base_model.parameters():

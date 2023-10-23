@@ -14,7 +14,7 @@ from sklearn import model_selection
 from transformers import TrainerCallback
 
 from src.data import preprocess_data
-from src.model import get_model
+from src.lightning_model import get_model
 
 
 def compute_metrics(eval_pred):
@@ -148,8 +148,21 @@ def train_pipeline(a, test_data, train_data, fold=None):
 def get_kfold_and_groups(a, data):
     if a.group_hashed:
         kfold = model_selection.GroupKFold(n_splits=a.n_splits)
-        groups = [hash(d["cv"]["jobtitle"] + "".join(d["cv"]["skills"])) for d in data]
+        groups = [get_candidate_hash(d) for d in data]
     else:
         kfold = model_selection.KFold(n_splits=a.n_splits)
         groups = None
     return kfold, groups
+
+
+def get_candidate_hash(d):
+    return hash(d["cv"]["jobtitle"] + "".join(sorted(d["cv"]["skills"])))
+
+
+def get_cv_hash(d):
+    return hash("".join(sorted(d["cv"]["skills"])))
+
+
+def get_application_hash(a):
+    return hash("".join(sorted(a["cv"]["skills"])) + a["job"]["jobtitle"] + "".join(sorted(a["job"]["skills"])) + str(
+        a["label"]))

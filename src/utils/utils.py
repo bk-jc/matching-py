@@ -47,13 +47,17 @@ def parse_args(args) -> argparse.Namespace:
 
     # Model config
     parser.add_argument("--model_name", type=str, required=False, default="sentence-transformers/all-MiniLM-L6-v2")
-    parser.add_argument("--pooling_mode", type=str, required=False, default="cls", choices=["cls", "max"])
+    parser.add_argument("--pooling_mode", type=str, required=False, default="cls", choices=["cls", "max", "mean"])
     parser.add_argument("--untrained", type=bool, required=False, default=False)
     parser.add_argument("--num_heads", type=int, required=False, default=4)
     parser.add_argument("--max_skills", type=int, required=False, default=20)
     parser.add_argument("--max_len", type=int, required=False, default=64,
                         help="Max number of tokens for an input (job title or skill)")
     parser.add_argument("--cache_embeddings", type=bool, required=False, default=True)
+    parser.add_argument("--hidden_dim", type=int, required=False, default=300)
+    parser.add_argument("--readout_dim", type=int, required=False, default=300)
+    parser.add_argument("--n_ffn_blocks_emd", type=int, required=False, default=1)
+    parser.add_argument("--n_ffn_blocks_readout", type=int, required=False, default=1)
 
     # Training options
     parser.add_argument("--train_batch_size", type=int, required=False, default=4)
