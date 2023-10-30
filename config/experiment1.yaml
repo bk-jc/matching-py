@@ -1,0 +1,32 @@
+n_runs: 2
+n_splits: 5
+learning_rate:
+  log: True
+  low: 0.00001
+  high: 0.1
+train_batch_size:
+  int: True
+  low: 32
+  high: 256
+val_batch_size: 64
+train_steps:
+  int: True
+  low: 500
+  high: 2000
+pooling_mode: max
+raw_train_path: /Users/bas/PycharmProjects/jarvis2/data/20231006_162316_dip_train_2023_1_0_20x300_11104.csv
+raw_test_path: /Users/bas/PycharmProjects/jarvis2/data/20230927_172709_eqk_validation_0_20x300_800.csv
+#n_workers: 5
+val_steps: 100
+hidden_dim: 300
+readout_dim: 128
+n_ffn_blocks_emd: 1
+n_ffn_blocks_readout: 1
+cache_embeddings: True
+exp_name: baseline
+dropout_rate: 0.25
+loss_fn: cosine
+es_delta: 0.001
+allow_half_label: true
+es_patience: 10
+#model_name: distilroberta-base
