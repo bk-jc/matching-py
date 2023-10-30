@@ -10,7 +10,7 @@ from src.jarvis_model import Jarvis
 
 def get_model_fn(a):
     def get_model():
-        return Jarvis(a=a, model_name=a.model_name, emb_size=300, tokenizer=get_tokenizer(a))
+        return Jarvis(a=a, model_name=a.model_name, tokenizer=get_tokenizer(a))
 
     return get_model
 
@@ -128,6 +128,9 @@ class ModuleJarvis(pytorch_lightning.LightningModule):
         self.log_metrics(self.train_metrics, prefix="train")
         self.log("train_loss", torch.stack(self.train_step_loss).mean())
         self.train_step_loss.clear()
+        if hasattr(self.model, "cache_path") and self.model.cache:
+            torch.save(self.model.cache, self.model.cache_path)
+            # torch.save(self.model.cache, open(self.model.cache_path, "w"))
 
     def on_validation_epoch_end(self) -> None:
         self.update_threshold()
@@ -188,7 +191,7 @@ class ModuleJarvis(pytorch_lightning.LightningModule):
 
 
 def get_model(a, train_ds, val_ds):
-    base_model = Jarvis(a=a, model_name=a.model_name, emb_size=300, tokenizer=get_tokenizer(a))
+    base_model = Jarvis(a=a, model_name=a.model_name, tokenizer=get_tokenizer(a))
     return ModuleJarvis(base_model=base_model, lr=a.learning_rate, weight_decay=a.weight_decay, n_steps=a.train_steps,
                         n_thresholds=a.n_thresholds, train_ds=train_ds, val_ds=val_ds)
 

@@ -26,6 +26,7 @@ setup:
 	fi
 
 tensorboard:
+	echo http://localhost:6006/?pinnedCards=%5B%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22val_all_f1%22%7D%2C%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22val_all_FPR%22%7D%2C%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22val_all_FNR%22%7D%2C%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22val_loss%22%7D%2C%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22train_loss%22%7D%5D&darkMode=true#timeseries
 	tensorboard --logdir ./output
 
 update:

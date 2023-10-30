@@ -58,6 +58,7 @@ def parse_args(args) -> argparse.Namespace:
     parser.add_argument("--readout_dim", type=int, required=False, default=300)
     parser.add_argument("--n_ffn_blocks_emd", type=int, required=False, default=1)
     parser.add_argument("--n_ffn_blocks_readout", type=int, required=False, default=1)
+    parser.add_argument("--skill_prefix", type=str, required=False, default="")
 
     # Training options
     parser.add_argument("--train_batch_size", type=int, required=False, default=4)
@@ -67,7 +68,7 @@ def parse_args(args) -> argparse.Namespace:
     parser.add_argument("--val_steps", type=int, required=False, default=5)
     parser.add_argument("--warmup_ratio", type=float, required=False, default=0.1)
     parser.add_argument("--dropout_rate", type=float, required=False, default=0.1)
-    parser.add_argument("--weight_decay", type=float, required=False, default=0.01)
+    parser.add_argument("--weight_decay", type=float, required=False, default=1e-4)
     parser.add_argument("--es_delta", type=float, required=False, default=0.01)
     parser.add_argument("--es_patience", type=float, required=False, default=5)
     parser.add_argument("--fp16", type=bool, required=False, default=False)

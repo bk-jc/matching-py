@@ -68,7 +68,7 @@ def get_data(a, data_filepath):
 def preprocess_data(data, a, train):
     ds = Dataset.from_list(data)
     ds = ignore_empty_skill_docs(ds)
-    if train:
+    if train or a.n_splits > 0:  # For cross-validation, we want to have negative samples for the test dataset too
         batch_size = a.train_batch_size
         if a.negative_sampling:
             ds = insert_negative_samples(ds, a)
