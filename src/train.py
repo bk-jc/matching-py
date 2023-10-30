@@ -3,6 +3,7 @@ import logging
 import os
 import sys
 import time
+from pathlib import Path
 
 import numpy as np
 import optuna
@@ -90,7 +91,7 @@ def grid_search(a):
     logging.info(f"Average run duration: {duration / config['n_runs']} seconds.")
 
     # Persist data about grid search
-    base_path = a.save_path / config.get("exp_name", a.exp_name) / a.version
+    base_path = Path(a.save_path) / config.get("exp_name", a.exp_name) / a.version
     study.trials_dataframe().to_csv(base_path / "optuna.csv")
     optuna.visualization.plot_parallel_coordinate(
         study,

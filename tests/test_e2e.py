@@ -51,4 +51,6 @@ def test_optuna(tmpdir):
     out_time = os.listdir(out_dir)[0]
     out_dir = os.path.join(out_dir, out_time)
 
-    assert len(os.listdir(out_dir)) == yaml.safe_load(open(optuna_config_path))["n_runs"]
+    assert len([d for d in os.listdir(out_dir) if d.startswith("run")]) == yaml.safe_load(open(optuna_config_path))[
+        "n_runs"]
+    assert "optuna.csv" in os.listdir(out_dir) and "coordinates.png" in os.listdir(out_dir)
