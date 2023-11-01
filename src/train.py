@@ -12,10 +12,12 @@ import yaml
 from src.data import get_data
 from src.utils.onnx import export_to_onnx
 from src.utils.training import compute_kfold_scores, train_pipeline, get_csv_score, get_kfold_and_groups
-from src.utils.utils import parse_args, init_logger_and_seed
+from src.utils.utils import parse_args, init_logger_and_seed, persist_args
 
 
 def run_experiment(a):
+    persist_args(a)
+
     logging.info("Getting data")
     train_data = get_data(a, a.raw_train_path)
     test_data = get_data(a, a.raw_test_path)
@@ -102,7 +104,7 @@ def grid_search(a):
 
 
 def main(args):
-    init_logger_and_seed(args)
+    args = init_logger_and_seed(args)
 
     if args.optuna_path:
         grid_search(args)

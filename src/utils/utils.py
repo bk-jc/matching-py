@@ -4,7 +4,9 @@ import os
 from datetime import datetime
 from pathlib import Path
 
+import git
 import lightning
+import yaml
 
 log_levels = {
     'DEBUG': logging.DEBUG,
@@ -93,7 +95,36 @@ def parse_args(args) -> argparse.Namespace:
 
 def init_logger_and_seed(args):
     logging.info("Setting up")
+    base_path = Path(args.save_path) / args.exp_name / args.version
+    os.makedirs(base_path, exist_ok=True)
+
+    args.commit_hash = get_current_git_commit_hash()
     if args.n_workers:
         os.environ["TOKENIZERS_PARALLELISM"] = "true"
     lightning.seed_everything(args.seed)
-    logging.getLogger().setLevel(log_levels[args.log_level])
+
+    # Set up the logger
+    logger = logging.getLogger()
+    logger.setLevel(log_levels[args.log_level])
+
+    file_handler = logging.FileHandler(base_path / "out.log")
+    file_handler.setLevel(log_levels[args.log_level])
+    file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(log_levels[args.log_level])
+    console_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+
+    return args
+
+
+def get_current_git_commit_hash():
+    return git.Repo(search_parent_directories=True).head.object.hexsha
+
+
+def persist_args(a):
+    with open(Path(a.save_path) / "args.yaml", 'w') as yaml_file:
+        yaml.dump(a, yaml_file)
