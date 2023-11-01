@@ -7,7 +7,7 @@ from torch import nn as nn
 from torch.nn.functional import pad
 from transformers import AutoModel, BertLayer
 
-from src.losses import contrastive_loss, cos_loss
+from losses import contrastive_loss, cos_loss
 
 
 class Jarvis(nn.Module):

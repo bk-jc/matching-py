@@ -1,7 +1,7 @@
 import streamlit as st
+from model import get_model_fn
 
-from src.model import get_model_fn
-from src.utils.utils import parse_args
+from utils.utils import parse_args
 
 a = parse_args()
 a.untrained = True

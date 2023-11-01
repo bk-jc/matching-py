@@ -9,10 +9,10 @@ import numpy as np
 import optuna
 import yaml
 
-from src.data import get_data
-from src.utils.onnx import export_to_onnx
-from src.utils.training import compute_kfold_scores, train_pipeline, get_csv_score, get_kfold_and_groups
-from src.utils.utils import parse_args, init_logger_and_seed, persist_args
+from data import get_data
+from utils.onnx import export_to_onnx
+from utils.training import compute_kfold_scores, train_pipeline, get_csv_score, get_kfold_and_groups
+from utils.utils import parse_args, init_logger_and_seed, persist_args
 
 
 def run_experiment(a):

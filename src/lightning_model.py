@@ -5,7 +5,7 @@ from sklearn.metrics import f1_score
 from transformers import AutoTokenizer
 from transformers import get_linear_schedule_with_warmup
 
-from src.jarvis_model import Jarvis
+from jarvis_model import Jarvis
 
 
 def get_model_fn(a):

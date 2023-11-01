@@ -13,8 +13,8 @@ from pytorch_lightning import Trainer
 from sklearn import model_selection
 from transformers import TrainerCallback
 
-from src.data import preprocess_data
-from src.lightning_model import get_model
+from data import preprocess_data
+from lightning_model import get_model
 
 
 def compute_metrics(eval_pred):
