@@ -1,7 +1,21 @@
+# Virtual environment
 .venv
+
+# IDE
 .idea
 .vscode
-**/output/*
+
+# Cache
 **/__pycache__
+.cache
+.pytest_cache
+
+# Training data
 data/*
 !data/mock
+
+# Output artefacts
+output/*
+
+# Other
+*.egg-info

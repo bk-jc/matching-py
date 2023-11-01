@@ -3,7 +3,7 @@ from pathlib import Path
 
 import yaml
 
-from src.train import main, parse_args
+from jarvis2.main import main, parse_args
 from tests.constants import SHARED_ARGS
 
 

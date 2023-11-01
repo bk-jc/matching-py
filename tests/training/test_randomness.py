@@ -2,9 +2,9 @@ from pathlib import Path
 
 import torch
 
-from src.data import preprocess_data
-from src.train import get_data
-from src.utils.utils import parse_args, init_logger_and_seed
+from jarvis2.data.data import preprocess
+from jarvis2.main import get_data
+from jarvis2.utils.utils import parse_args, init_logger_and_seed
 from tests.constants import SHARED_ARGS
 
 
@@ -47,5 +47,5 @@ def get_seed_args(tmpdir, seed):
 
 def get_dataset(a):
     data = get_data(a, str(Path(__file__).parent.parent / 'data' / 'mock' / 'sample.json'))
-    dataset = preprocess_data(data, a, train=True)
+    dataset = preprocess(data, a, train=True)
     return dataset

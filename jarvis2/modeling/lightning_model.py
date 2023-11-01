@@ -2,20 +2,10 @@ import pytorch_lightning
 import torch
 import torchmetrics
 from sklearn.metrics import f1_score
-from transformers import AutoTokenizer
 from transformers import get_linear_schedule_with_warmup
 
-from jarvis_model import Jarvis
 
-
-def get_model_fn(a):
-    def get_model():
-        return Jarvis(a=a, model_name=a.model_name, tokenizer=get_tokenizer(a))
-
-    return get_model
-
-
-class ModuleJarvis(pytorch_lightning.LightningModule):
+class JarvisLightningWrapper(pytorch_lightning.LightningModule):
     """PyTorch Lightning wrapper for Jarvis model, such that it is compatible with Lightning trainer"""
 
     def __init__(
@@ -37,7 +27,7 @@ class ModuleJarvis(pytorch_lightning.LightningModule):
         self.val_ds = val_ds
         self.n_thresholds = n_thresholds
 
-        self.threshold = 0.5  # Initial threshold
+        self.threshold = 0.5  # Initial threshold TODO move this to the base model as this is not a Lightning construct
 
         # Freeze transformer model
         for p in self.model.base_model.parameters():
@@ -130,7 +120,6 @@ class ModuleJarvis(pytorch_lightning.LightningModule):
         self.train_step_loss.clear()
         if hasattr(self.model, "cache_path") and self.model.cache:
             torch.save(self.model.cache, self.model.cache_path)
-            # torch.save(self.model.cache, open(self.model.cache_path, "w"))
 
     def on_validation_epoch_end(self) -> None:
         self.update_threshold()
@@ -140,7 +129,6 @@ class ModuleJarvis(pytorch_lightning.LightningModule):
         self.log("val_loss", torch.stack(self.val_step_loss).mean())
         self.val_step_loss.clear()
 
-        # self.clear_metrics(self.val_metrics)
         self.val_sims = []
         self.val_labels = []
         self.val_outputs = []
@@ -188,13 +176,3 @@ class ModuleJarvis(pytorch_lightning.LightningModule):
         }
 
         return [optimizer], [scheduler]
-
-
-def get_model(a, train_ds, val_ds):
-    base_model = Jarvis(a=a, model_name=a.model_name, tokenizer=get_tokenizer(a))
-    return ModuleJarvis(base_model=base_model, lr=a.learning_rate, weight_decay=a.weight_decay, n_steps=a.train_steps,
-                        n_thresholds=a.n_thresholds, train_ds=train_ds, val_ds=val_ds)
-
-
-def get_tokenizer(a):
-    return AutoTokenizer.from_pretrained(a.model_name)

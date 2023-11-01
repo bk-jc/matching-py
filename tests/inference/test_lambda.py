@@ -1,6 +1,6 @@
 import pytest
 
-from app import lambda_handler
+from jarvis2.inference.app import lambda_handler
 
 
 @pytest.mark.skip(reason="This is a local test that uses a downloaded model.")

@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from src.losses import contrastive_loss
+from jarvis2.modeling.losses import contrastive_loss
 
 FP_TOLERANCE = 1e-6
 

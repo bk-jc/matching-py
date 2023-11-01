@@ -10,11 +10,10 @@ import torch
 from lightning.pytorch.loggers import CSVLogger, TensorBoardLogger
 from matplotlib import pyplot as plt
 from pytorch_lightning import Trainer
-from sklearn import model_selection
 from transformers import TrainerCallback
 
-from data import preprocess_data
-from lightning_model import get_model
+from jarvis2.data.data import preprocess
+from modeling.getters import get_model
 
 
 def compute_metrics(eval_pred):
@@ -108,8 +107,8 @@ def get_csv_score(a, csv_path):
 
 def train_pipeline(a, test_data, train_data, fold=None):
     logging.info("Preprocessing data")
-    train_ds = preprocess_data(train_data, a, train=True)
-    test_ds = preprocess_data(test_data, a, train=False)
+    train_ds = preprocess(train_data, a, train=True)
+    test_ds = preprocess(test_data, a, train=False)
 
     logging.info("Loading model")
     pl_model = get_model(a, train_ds, test_ds)
@@ -143,26 +142,3 @@ def train_pipeline(a, test_data, train_data, fold=None):
     )
 
     return pl_model.model, test_ds
-
-
-def get_kfold_and_groups(a, data):
-    if a.group_hashed:
-        kfold = model_selection.GroupKFold(n_splits=a.n_splits)
-        groups = [get_candidate_hash(d) for d in data]
-    else:
-        kfold = model_selection.KFold(n_splits=a.n_splits)
-        groups = None
-    return kfold, groups
-
-
-def get_candidate_hash(d):
-    return hash(d["cv"]["jobtitle"] + "".join(sorted(d["cv"]["skills"])))
-
-
-def get_cv_hash(d):
-    return hash("".join(sorted(d["cv"]["skills"])))
-
-
-def get_application_hash(a):
-    return hash("".join(sorted(a["cv"]["skills"])) + a["job"]["jobtitle"] + "".join(sorted(a["job"]["skills"])) + str(
-        a["label"]))

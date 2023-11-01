@@ -1,47 +1,12 @@
 import copy
 import logging
-import os
-import sys
 import time
 from pathlib import Path
 
-import numpy as np
 import optuna
 import yaml
 
-from data import get_data
-from utils.onnx import export_to_onnx
-from utils.training import compute_kfold_scores, train_pipeline, get_csv_score, get_kfold_and_groups
-from utils.utils import parse_args, init_logger_and_seed, persist_args
-
-
-def run_experiment(a):
-    persist_args(a)
-
-    logging.info("Getting data")
-    train_data = get_data(a, a.raw_train_path)
-
-    if a.n_splits > 1:
-        logging.info(f"Splitting in {a.n_splits} train-test splits")
-        kfold, groups = get_kfold_and_groups(a, data=train_data)
-
-        for fold, (train_ids, val_ids) in enumerate(kfold.split(train_data, groups=groups)):
-            logging.info(f"Fold {fold + 1} out of {a.n_splits}")
-            train_split = np.array(train_data)[train_ids].tolist()
-            test_split = np.array(train_data)[val_ids].tolist()
-
-            train_pipeline(a, test_split, train_split, fold=fold)
-
-        return compute_kfold_scores(a, a.version)
-
-    else:
-        test_data = get_data(a, a.raw_test_path)
-        model, test_ds = train_pipeline(a, test_data, train_data)
-
-        logging.info("Exporting model artefact")
-        export_to_onnx(a, model=model, test_ds=test_ds)
-
-        return get_csv_score(a, csv_path=os.path.join(a.save_path, a.exp_name, a.version, "metrics.csv"))
+from training.main import run_experiment
 
 
 def grid_search(a):
@@ -101,17 +66,3 @@ def grid_search(a):
         target_name=config.get("score_metric", a.score_metric)
     ).write_image(base_path / "coordinates.png")
     return study.best_params
-
-
-def main(args):
-    args = init_logger_and_seed(args)
-
-    if args.optuna_path:
-        grid_search(args)
-    else:
-        run_experiment(args)
-
-
-if __name__ == '__main__':
-    args = parse_args(sys.argv[1:])
-    main(args)

@@ -31,7 +31,7 @@ tensorboard:
 
 update:
 	$(call output, "UPDATE $(projectName)")
-	@pip install -r requirements.txt
+	@pip install -e .
 
 test: update
 	$(call output, "TESTS $(projectName) v$(snapshotVersion)")

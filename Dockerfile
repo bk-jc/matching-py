@@ -11,7 +11,7 @@ RUN python3.9 -m pip install -r requirements.txt
 COPY model_tokenizer ./model_tokenizer
 COPY model.onnx .
 
-COPY app.py app_helpers.py ./
+COPY jarvis2/inference/app.py ./
 
 FROM build AS test
 
