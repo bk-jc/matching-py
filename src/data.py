@@ -1,4 +1,5 @@
 import json
+import logging
 from copy import deepcopy
 
 import numpy as np
@@ -66,47 +67,52 @@ def get_data(a, data_filepath):
 
 
 def preprocess_data(data, a, train):
-    ds = Dataset.from_list(data)
-    ds = ignore_empty_skill_docs(ds)
-    if train or a.n_splits > 0:  # For cross-validation, we want to have negative samples for the test dataset too
+    if train:
         batch_size = a.train_batch_size
-        if a.negative_sampling:
-            ds = insert_negative_samples(ds, a)
     else:
         batch_size = a.val_batch_size
 
-    dl_kwargs = {}
-    if a.n_workers:
-        dl_kwargs["num_workers"] = a.n_workers
-    dataloader = DataLoader(ds, batch_size=batch_size, collate_fn=collate_fn, shuffle=train, **dl_kwargs)
-    return dataloader
+    logging.info("Removing documents without skills")
+    data = ignore_empty_skill_docs(data)
+
+    # For cross-validation, we want to have negative samples for the test dataset too
+    logging.info("Creating negative samples")
+    if (train or a.n_splits > 0) and a.negative_sampling:
+        data = insert_negative_samples(data, a)
+
+    return DataLoader(
+        dataset=Dataset.from_list(data),
+        batch_size=batch_size,
+        collate_fn=collate_fn,
+        shuffle=train,
+        **({
+               "num_workers": a.n_workers,
+               "multiprocessing_context": "fork",
+               "persistent_workers": True,
+           } if a.n_workers else {})
+    )
 
 
-def insert_negative_samples(ds, a):
-    n_samples = int(len(ds) * a.negative_ratio)
+def insert_negative_samples(data, a):
+    n_samples = int(len(data) * a.negative_ratio)
 
     samples = []
     for _ in range(n_samples):
-        i = np.random.choice(len(ds))
-        j = (i + np.random.choice(len(ds) - 2) + 1) % len(ds)  # Make sure that j != i
+        i = np.random.choice(len(data))
+        j = (i + np.random.choice(len(data) - 2) + 1) % len(data)  # Make sure that j != i
         samples.append({
-            "cv": ds[i]["cv"],
-            "job": ds[j]["job"],
+            "cv": data[i]["cv"],
+            "job": data[j]["job"],
             "label": 0.,
         })
 
-    return Dataset.from_list(samples + [_ for _ in ds])
+    return samples + data
 
 
-def ignore_empty_skill_docs(ds):
-    ignore_idx = [i for i, doc in enumerate(ds) if not doc["cv"]["skills"] or not doc["job"]["skills"]]
-    ds = ds.select(
-        (
-            i for i in range(len(ds))
-            if i not in set(ignore_idx)
-        )
-    )
-    return ds
+def ignore_empty_skill_docs(data):
+    ignore_idx = [i for i, doc in enumerate(data) if not doc["cv"]["skills"] or not doc["job"]["skills"]]
+    select_idx = [i for i in range(len(data)) if i not in set(ignore_idx)]
+    return np.array(data)[select_idx].tolist()
 
 
 def tokenize_ds(tokenize_fn, ds):
