@@ -13,7 +13,7 @@ raw_test_path: /Users/bas/PycharmProjects/jarvis2/data/20230927_172709_eqk_valid
 #n_workers: 5
 val_steps: 100
 hidden_dim: 300
-readout_dim: 300
+readout_dim: 128
 n_ffn_blocks_emd: 1
 n_ffn_blocks_readout: 1
 cache_embeddings: True
@@ -21,6 +21,6 @@ exp_name: baseline
 dropout_rate: 0.4
 loss_fn: cosine
 es_delta: 0.001
-allow_half_label: true
+allow_half_label: True
 es_patience: 10
-model_name: distilroberta-base
+#model_name: distilroberta-base

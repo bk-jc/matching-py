@@ -1,4 +1,4 @@
-n_runs: 2
+n_runs: 50
 n_splits: 5
 learning_rate:
   log: True
@@ -27,6 +27,6 @@ exp_name: baseline
 dropout_rate: 0.25
 loss_fn: cosine
 es_delta: 0.001
-allow_half_label: true
+allow_half_label: True
 es_patience: 10
 #model_name: distilroberta-base
