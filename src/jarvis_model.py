@@ -79,26 +79,12 @@ class Jarvis(nn.Module):
 
     def get_document_embedding(self, documents):
 
-        # Return untrained model output
-        if self.untrained:
-            raise NotImplementedError(
-                "Untrained mode was made broken during parallelization of the forward pass. If this is of interest, "
-                "ask Bas for help fixing it. Essentially it requires a function to return pooled document embeddings.")
-
-        document_skills = self.get_doc_embeddings(documents)
-
-        # Pad to a tensor and get attention masks TODO parallelize
-        document_tensor = torch.cat([pad(doc, (0, 0, 0, self.max_skills - doc.shape[0])).unsqueeze(0)
-                                     for doc in document_skills])
-        attention_mask = torch.cat([pad(torch.ones(doc.shape[0]), (0, self.max_skills - doc.shape[0])).unsqueeze(0)
-                                    for doc in document_skills])
-
-        # Multiply embeddings with skill weights
-        if self.use_skill_weights:
-            skill_weight_tensor = torch.cat(
-                [pad(torch.tensor([1.] + d["weights"]), (0, self.max_skills - 1 - len(d["weights"]))).unsqueeze(0)
-                 for d in documents])
-            document_tensor *= skill_weight_tensor.unsqueeze(-1)
+        document_tensor, attention_mask = [], []
+        for doc in documents:
+            tensor, attn_mask = self.get_skill_embeddings(doc)
+            document_tensor.append(tensor)
+            attention_mask.append(attn_mask)
+        document_tensor, attention_mask = torch.stack(document_tensor), torch.stack(attention_mask)
 
         batch_size, n_skills = document_tensor.shape[:2]
 
@@ -144,13 +130,6 @@ class Jarvis(nn.Module):
 
         return document_tensor
 
-    def get_doc_embeddings(self, documents):
-        document_embeddings = []
-        for doc in documents:
-            doc_emb = self.get_skill_embeddings(doc)
-            document_embeddings.append(doc_emb)
-        return document_embeddings
-
     def get_skill_embeddings(self, document):
 
         if self.cache_embeddings:
@@ -180,7 +159,12 @@ class Jarvis(nn.Module):
             ).data
             skills = self.base_model(**document["skills"]).last_hidden_state[:, 0]
 
-        return skills
+        # Pad tensor and get attention masks
+        pad_length = self.max_skills
+        attention_mask = pad(torch.ones(skills.shape[0]), (0, pad_length - skills.shape[0]))
+        skills = pad(skills, (0, 0, 0, pad_length - skills.shape[0]))
+
+        return skills, attention_mask
 
     def forward(self, cv, job, label=None):
 

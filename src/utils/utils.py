@@ -38,7 +38,6 @@ def parse_args(args) -> argparse.Namespace:
     parser.add_argument("--raw_test_path", help='Path of the raw test data', type=str, required=False,
                         default=str(Path(__file__).parent.parent.parent / 'data' / 'mock' / 'sample.json'))
     parser.add_argument("--seed", type=int, required=False, default=1997)
-    parser.add_argument("--use_skill_weights", type=bool, required=False, default=False)
     parser.add_argument("--allow_half_label", type=bool, required=False, default=False)
     parser.add_argument("--negative_sampling", type=bool, required=False, default=True)
     parser.add_argument("--negative_ratio", type=float, required=False, default=1,
@@ -48,7 +47,6 @@ def parse_args(args) -> argparse.Namespace:
     # Model config
     parser.add_argument("--model_name", type=str, required=False, default="sentence-transformers/all-MiniLM-L6-v2")
     parser.add_argument("--pooling_mode", type=str, required=False, default="cls", choices=["cls", "max", "mean"])
-    parser.add_argument("--untrained", type=bool, required=False, default=False)
     parser.add_argument("--num_heads", type=int, required=False, default=4)
     parser.add_argument("--max_skills", type=int, required=False, default=20)
     parser.add_argument("--max_len", type=int, required=False, default=64,
