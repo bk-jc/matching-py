@@ -20,7 +20,6 @@ def run_experiment(a):
 
     logging.info("Getting data")
     train_data = get_data(a, a.raw_train_path)
-    test_data = get_data(a, a.raw_test_path)
 
     if a.n_splits > 1:
         logging.info(f"Splitting in {a.n_splits} train-test splits")
@@ -36,6 +35,7 @@ def run_experiment(a):
         return compute_kfold_scores(a, a.version)
 
     else:
+        test_data = get_data(a, a.raw_test_path)
         model, test_ds = train_pipeline(a, test_data, train_data)
 
         logging.info("Exporting model artefact")

@@ -20,7 +20,6 @@ class Jarvis(nn.Module):
         if a.n_ffn_blocks_emd < 1 or a.n_ffn_blocks_readout < 1:
             raise ValueError(f"Require at least 1 FFN blocks for embeddings and readout")
 
-        self.untrained = a.untrained
         self.pooling_mode = a.pooling_mode
 
         self.base_model = AutoModel.from_pretrained(model_name)
@@ -30,7 +29,6 @@ class Jarvis(nn.Module):
         self.max_len = a.max_len
         self.max_skills = a.max_skills
         self.num_heads = a.num_heads
-        self.use_skill_weights = a.use_skill_weights
         self.cache_embeddings = a.cache_embeddings
         self.skill_prefix = a.skill_prefix
 
