@@ -126,5 +126,5 @@ def get_current_git_commit_hash():
 
 
 def persist_args(a):
-    with open(Path(a.save_path) / "args.yaml", 'w') as yaml_file:
+    with open(Path(a.save_path) / a.version / "args.yaml", 'w') as yaml_file:
         yaml.dump(a, yaml_file)
