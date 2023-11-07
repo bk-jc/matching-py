@@ -38,13 +38,7 @@ class CustomCallback(TrainerCallback):
 
 
 def get_callbacks(a, version):
-    return [
-        pl.callbacks.ModelCheckpoint(
-            monitor="val_loss",
-            save_on_train_epoch_end=False,
-            dirpath=os.path.join(a.save_path, a.exp_name, version),
-            every_n_epochs=1
-        ),
+    callbacks = [
         pl.callbacks.EarlyStopping(
             monitor="val_loss",
             min_delta=a.es_delta,
@@ -55,6 +49,18 @@ def get_callbacks(a, version):
         ),
         pl.callbacks.LearningRateMonitor(logging_interval="step")
     ]
+
+    if a.n_splits <= 1:
+        callbacks.append(
+            pl.callbacks.ModelCheckpoint(
+                monitor="val_loss",
+                save_on_train_epoch_end=False,
+                dirpath=os.path.join(a.save_path, a.exp_name, version),
+                every_n_epochs=1
+            ),
+        )
+
+    return callbacks
 
 
 def save_conf_matrix(confusion_matrix, csv_logger):
@@ -119,6 +125,7 @@ def train_pipeline(a, test_data, train_data, fold=None):
         version += f"/fold{fold + 1}"
     trainer = Trainer(
         accelerator="auto" if (torch.cuda.is_available() and a.use_gpu) else "cpu",
+        enable_checkpointing=a.n_splits <= 1,
         max_steps=a.train_steps,
         val_check_interval=a.val_steps,
         callbacks=get_callbacks(a, version),
