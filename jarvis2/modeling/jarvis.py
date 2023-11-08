@@ -38,7 +38,8 @@ class Jarvis(nn.Module):
         skill_attention_config.position_embedding_type = None  # Disable pos embeddings
 
         if a.pooling_mode == "cls":
-            self.skill_attention = BertLayer(skill_attention_config)
+            # TODO configurable config.num_attention_heads config.intermediate_size config.
+            self.skill_attention = BertLayer(skill_attention_config).attention
             self.skill_pooling = torch.nn.Parameter(torch.Tensor(a.hidden_dim))
             torch.nn.init.uniform_(
                 self.skill_pooling,
@@ -59,7 +60,7 @@ class Jarvis(nn.Module):
             dropout_rate=a.dropout_rate,
         )
         self.ffn_readout = FFN(
-            input_dim=a.hidden_dim,
+            input_dim=a.hidden_dim if a.n_ffn_blocks_emb else self.base_model.config.hidden_size,
             output_dim=a.readout_dim,
             hidden_dim=a.hidden_dim,
             n_blocks=a.n_ffn_blocks_emb,
