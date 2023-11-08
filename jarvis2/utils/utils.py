@@ -46,6 +46,14 @@ def parse_args(args) -> argparse.Namespace:
                         help="How many negatives to sample for each positive sample. Defaults to 1, "
                              "which means the dataset is balanced between positive and negatives samples.")
 
+    # Data augmentation
+    parser.add_argument("--remove_synonym_skills", type=bool, required=False, default=False)
+    parser.add_argument("--remove_strange_skills", type=bool, required=False, default=False)
+    parser.add_argument("--rename_skills", type=bool, required=False, default=False)
+    parser.add_argument("--augment_add_skill_rate", type=float, required=False, default=0.)
+    parser.add_argument("--augment_remove_skill_rate", type=float, required=False, default=0.)
+    parser.add_argument("--augment_change_skill_rate", type=float, required=False, default=0.)
+
     # Model config
     parser.add_argument("--model_name", type=str, required=False, default="sentence-transformers/all-MiniLM-L6-v2")
     parser.add_argument("--pooling_mode", type=str, required=False, default="cls", choices=["cls", "max", "mean"])

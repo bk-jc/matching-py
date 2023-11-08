@@ -4,6 +4,9 @@ import numpy as np
 import torch
 from datasets import Dataset
 from torch.utils.data import DataLoader
+from tqdm import tqdm
+
+from jarvis2.data.skills import IGNORED, DUPLICATES, MAPPING
 
 
 def preprocess(data, a, train):
@@ -11,6 +14,9 @@ def preprocess(data, a, train):
         batch_size = a.train_batch_size
     else:
         batch_size = a.val_batch_size
+
+    logging.info("Preprocessing skills")
+    data = preprocess_skills(data, a)
 
     logging.info("Removing documents without skills")
     data = remove_zero_skill_docs(data)
@@ -61,3 +67,24 @@ def collate_fn(inputs):
     label = torch.tensor([i["label"] for i in inputs])
 
     return {"cv": cv, "job": job, "label": label}
+
+
+def preprocess_skills(data, a):
+    synonym_mapping = {alias: category[0] for category in DUPLICATES for alias in category[1:]}
+    for docs in tqdm(data, desc="Preprocessing skills"):
+        for d in (docs["cv"], docs["job"]):
+            for i, skill in reversed(list(enumerate(d["skills"]))):
+                if a.remove_synonym_skills:
+                    d["skills"][i] = synonym_mapping.get(skill, skill)
+                if a.remove_strange_skills and skill in IGNORED:
+                    del d["skills"][i]
+                    continue
+                if a.rename_skills:
+                    new_skill = MAPPING.get(skill, skill)
+                    if new_skill:
+                        d["skills"][i] = new_skill
+
+            # Remove duplicates
+            d["skills"] = list(set(d["skills"]))
+
+    return data
