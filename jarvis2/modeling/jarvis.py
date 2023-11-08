@@ -18,7 +18,7 @@ class Jarvis(nn.Module):
         super(Jarvis, self).__init__()
 
         # validate args
-        if a.n_ffn_blocks_emd < 1 or a.n_ffn_blocks_readout < 1:
+        if a.n_ffn_blocks_emb < 1 or a.n_ffn_blocks_readout < 1:
             raise ValueError(f"Require at least 1 FFN blocks for embeddings and readout")
 
         self.pooling_mode = a.pooling_mode
@@ -55,14 +55,14 @@ class Jarvis(nn.Module):
             input_dim=self.base_model.config.hidden_size,
             output_dim=a.hidden_dim,
             hidden_dim=a.hidden_dim,
-            n_blocks=a.n_ffn_blocks_emd,
+            n_blocks=a.n_ffn_blocks_emb,
             dropout_rate=a.dropout_rate,
         )
         self.ffn_readout = FFN(
             input_dim=a.hidden_dim,
             output_dim=a.readout_dim,
             hidden_dim=a.hidden_dim,
-            n_blocks=a.n_ffn_blocks_emd,
+            n_blocks=a.n_ffn_blocks_emb,
             dropout_rate=a.dropout_rate,
         )
 

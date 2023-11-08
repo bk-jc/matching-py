@@ -64,7 +64,7 @@ def parse_args(args) -> argparse.Namespace:
     parser.add_argument("--cache_embeddings", type=bool, required=False, default=True)
     parser.add_argument("--hidden_dim", type=int, required=False, default=300)
     parser.add_argument("--readout_dim", type=int, required=False, default=300)
-    parser.add_argument("--n_ffn_blocks_emd", type=int, required=False, default=1)
+    parser.add_argument("--n_ffn_blocks_emb", type=int, required=False, default=1)
     parser.add_argument("--n_ffn_blocks_readout", type=int, required=False, default=1)
     parser.add_argument("--skill_prefix", type=str, required=False, default="")
 
