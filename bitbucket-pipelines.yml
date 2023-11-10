@@ -10,7 +10,5 @@ pipelines:
     - parallel:
         - step:
             name: Test
-            caches:
-              - pip
             script:
               - make test
