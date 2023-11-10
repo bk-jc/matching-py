@@ -46,6 +46,6 @@ def get_seed_args(tmpdir, seed):
 
 
 def get_dataset(a):
-    data = get_data(a, str(Path(__file__).parent.parent / 'data' / 'mock' / 'sample.json'))
+    data = get_data(a, str(Path(__file__).parent.parent.parent / 'data' / 'mock' / 'sample.json'))
     dataset = preprocess(data, a, train=True)
     return dataset
