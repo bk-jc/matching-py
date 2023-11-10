@@ -1,8 +1,8 @@
 import sys
 
+from jarvis2.training.main import run_experiment
+from jarvis2.training.optuna import grid_search
 from jarvis2.utils.utils import parse_args, init_logger_and_seed
-from training.main import run_experiment
-from training.optuna import grid_search
 
 
 def main(args):

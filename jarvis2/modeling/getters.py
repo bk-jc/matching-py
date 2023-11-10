@@ -1,7 +1,7 @@
 from transformers import AutoTokenizer
 
-from modeling.jarvis import Jarvis
-from modeling.lightning_model import JarvisLightningWrapper
+from jarvis2.modeling.jarvis import Jarvis
+from jarvis2.modeling.lightning_model import JarvisLightningWrapper
 
 
 def get_model(a, train_ds, val_ds):

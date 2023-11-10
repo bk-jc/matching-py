@@ -3,7 +3,7 @@ from pathlib import Path
 import torch
 
 from jarvis2.data.data import preprocess
-from jarvis2.main import get_data
+from jarvis2.data.getters import get_data
 from jarvis2.utils.utils import parse_args, init_logger_and_seed
 from tests.constants import SHARED_ARGS
 

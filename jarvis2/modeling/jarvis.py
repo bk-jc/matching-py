@@ -7,8 +7,8 @@ from torch import nn as nn
 from torch.nn.functional import pad
 from transformers import AutoModel, BertLayer
 
+from jarvis2.modeling.layers import FFN
 from jarvis2.modeling.losses import contrastive_loss, cos_loss
-from modeling.layers import FFN
 
 
 class Jarvis(nn.Module):

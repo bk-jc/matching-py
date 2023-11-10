@@ -13,7 +13,7 @@ from pytorch_lightning import Trainer
 from transformers import TrainerCallback
 
 from jarvis2.data.data import preprocess
-from modeling.getters import get_model
+from jarvis2.modeling.getters import get_model
 
 
 def compute_metrics(eval_pred):

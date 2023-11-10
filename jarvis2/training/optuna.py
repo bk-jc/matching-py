@@ -7,7 +7,7 @@ from pathlib import Path
 import optuna
 import yaml
 
-from training.main import run_experiment
+from jarvis2.training.main import run_experiment
 
 
 def grid_search(a):
