@@ -69,10 +69,11 @@ class Jarvis(nn.Module):
 
         if self.cache_embeddings:
             cache_file = f'{self.base_model.config.name_or_path.replace("/", "-")}.pt'
-            self.cache_path = Path(__file__).parent.parent.parent / ".cache"
-            os.makedirs(self.cache_path, exist_ok=True)
-            if os.path.exists(self.cache_path / cache_file):
-                self.cache = torch.load(self.cache_path / cache_file)
+            cache_path = Path(__file__).parent.parent.parent / ".cache"
+            os.makedirs(cache_path, exist_ok=True)
+            self.cache_path = cache_path / cache_file
+            if os.path.exists(self.cache_path):
+                self.cache = torch.load(self.cache_path)
             else:
                 self.cache = {}
 
