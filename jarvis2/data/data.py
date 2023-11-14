@@ -1,4 +1,5 @@
 import logging
+import re
 
 import numpy as np
 import torch
@@ -17,6 +18,9 @@ def preprocess(data, a, train):
 
     logging.info("Preprocessing skills")
     data = preprocess_skills(data, a)
+
+    logging.info("Preprocessing jobtitles")
+    data = preprocess_jobtitles(data, a)
 
     logging.info("Removing documents without skills")
     data = remove_zero_skill_docs(data)
@@ -67,6 +71,56 @@ def collate_fn(inputs):
     label = torch.tensor([i["label"] for i in inputs])
 
     return {"cv": cv, "job": job, "label": label}
+
+
+def preprocess_jobtitles(data, a):
+    if a.preprocess_jobtitle:
+        for docs in tqdm(data, desc="Preprocessing skills"):
+            job = docs["job"]
+            job["jobtitle"] = preprocess_jobtitle(job["jobtitle"])
+    return data
+
+
+def preprocess_jobtitle(jobtitle):
+    jobtitle = jobtitle.replace('&amp;', '&')
+    jobtitle = jobtitle.replace('&ndash;', '-')
+    jobtitle = jobtitle.replace('&#39;', "'")
+    jobtitle = jobtitle.replace('&#8211;', "-")
+    jobtitle = jobtitle.replace('&lt;', "<")
+    jobtitle = jobtitle.replace('&gt;', ">")
+    jobtitle = jobtitle.replace('&#226;', "â")
+
+    # Remove data inbetween parentheses
+    jobtitle = re.sub(r" ? \([^)]+\)", "", jobtitle)
+    jobtitle = re.sub(r" ?<[^>]+>", "", jobtitle)
+    jobtitle = re.sub(r" ?\[[^>]+\]", "", jobtitle)
+
+    # Remove percentages
+    jobtitle = re.sub(r'(\d+\s*%?\s*-?\s*)+', "", jobtitle)
+
+    # Remove gender specifications
+    # TODO french/ita variants
+    jobtitle = re.sub(r'[mwfdMWFD][/][mwfdMWFD]([/][mwfdMWFD])*', '', jobtitle)
+
+    # Standardize uppercasing
+    if jobtitle.isupper():
+        jobtitle = jobtitle.capitalize()
+
+    # Remove leading/trailing whitespace
+    jobtitle = jobtitle.strip()
+
+    # Standardise whitespace
+    jobtitle = jobtitle.replace('\r', ' ').replace('\n', ' ')
+    jobtitle = re.sub(' +', ' ', jobtitle)
+
+    # Remove German gender indication
+    jobtitle = jobtitle.replace("*in", "").replace("/in", "").replace("/-in", "").replace(":in", "").replace(
+        "(in)", "")
+
+    # Trailing dashes and space
+    jobtitle = re.sub(r'[ \-]+$', '', jobtitle)
+
+    return jobtitle
 
 
 def preprocess_skills(data, a):

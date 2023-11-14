@@ -53,6 +53,7 @@ def parse_args(args) -> argparse.Namespace:
     parser.add_argument("--augment_add_skill_rate", type=float, required=False, default=0.)
     parser.add_argument("--augment_remove_skill_rate", type=float, required=False, default=0.)
     parser.add_argument("--augment_change_skill_rate", type=float, required=False, default=0.)
+    parser.add_argument("--preprocess_jobtitle", type=bool, required=False, default=False)
 
     # Model config
     parser.add_argument("--model_name", type=str, required=False, default="sentence-transformers/all-MiniLM-L6-v2")
