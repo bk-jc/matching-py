@@ -6,6 +6,7 @@ IGNORED = [
     "Cadence",
     "Clarify",
     "Cocoa",
+    "Cooking",
     "Tennis",
     "Spice",
     "Swimming",
