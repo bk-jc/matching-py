@@ -24,7 +24,6 @@ class Jarvis(nn.Module):
         self.pooling_mode = a.pooling_mode
 
         self.base_model = AutoModel.from_pretrained(model_name)
-        self.dropout = nn.Dropout(a.dropout_rate)
         self.loss = nn.CrossEntropyLoss()
         self.tokenizer = tokenizer
         self.max_len = a.max_len
@@ -58,6 +57,7 @@ class Jarvis(nn.Module):
             hidden_dim=a.hidden_dim,
             n_blocks=a.n_ffn_blocks_emb,
             dropout_rate=a.dropout_rate,
+            relu_on_last_layer=True,
         )
         self.ffn_readout = FFN(
             input_dim=a.hidden_dim if a.n_ffn_blocks_emb else self.base_model.config.hidden_size,
@@ -65,6 +65,7 @@ class Jarvis(nn.Module):
             hidden_dim=a.hidden_dim,
             n_blocks=a.n_ffn_blocks_emb,
             dropout_rate=a.dropout_rate,
+            relu_on_last_layer=False,
         )
 
         if self.cache_embeddings:
@@ -112,7 +113,10 @@ class Jarvis(nn.Module):
         elif self.pooling_mode == "max":
 
             mask = attention_mask.unsqueeze(-1).repeat(1, 1, document_tensor.shape[-1])
-            document_tensor[mask == 0] = -torch.inf
+            document_tensor = torch.where(
+                mask == 0,
+                torch.tensor(-torch.inf).to(document_tensor.device), document_tensor
+            )
             document_tensor = torch.max(document_tensor, axis=1).values
 
         elif self.pooling_mode == "mean":
