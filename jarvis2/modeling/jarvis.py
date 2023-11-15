@@ -35,6 +35,7 @@ class Jarvis(nn.Module):
         skill_attention_config = copy.deepcopy(self.base_model.config)
         setattr(skill_attention_config, "hidden_size", a.hidden_dim)
         skill_attention_config.position_embedding_type = None  # Disable pos embeddings
+        skill_attention_config.num_attention_heads = a.num_heads
 
         if a.pooling_mode == "cls":
             # TODO configurable config.num_attention_heads config.intermediate_size config.
