@@ -47,9 +47,20 @@ class Jarvis(nn.Module):
             )
 
         if a.loss_fn == "contrastive":
-            self.loss_fn = contrastive_loss
+            loss_fn = contrastive_loss
         elif a.loss_fn == "cosine":
-            self.loss_fn = cos_loss
+            loss_fn = cos_loss
+        else:
+            raise NotImplementedError(f"Loss function {a.loss_fn} is not implemented")
+        self.loss_fn = loss_fn
+
+        if a.pos_label_bias or a.neg_label_bias:
+            def loss_fn_wrapper(y, sim):
+                y_ = y - a.pos_label_bias * (y == 1)
+                y_ = y_ + a.neg_label_bias * (y == 0)
+                return loss_fn(y_, sim)
+
+            self.loss_fn = loss_fn_wrapper
 
         self.ffn_emb_cv = self.get_ffn(a)
         self.ffn_emb_job = self.ffn_emb_cv if a.siamese else self.get_ffn(a)

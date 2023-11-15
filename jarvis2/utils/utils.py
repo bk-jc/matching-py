@@ -85,6 +85,8 @@ def parse_args(args) -> argparse.Namespace:
     parser.add_argument("--fp16", type=bool, required=False, default=False)
     parser.add_argument("--n_workers", type=int, required=False, default=0)
     parser.add_argument("--loss_fn", type=str, required=False, default="contrastive", choices=["contrastive", "cosine"])
+    parser.add_argument("--pos_label_bias", type=float, required=False, default=0.)
+    parser.add_argument("--neg_label_bias", type=float, required=False, default=0.)
     parser.add_argument("--n_thresholds", type=int, required=False, default="100")
 
     # Cross-validation & grid search
