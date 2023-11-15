@@ -64,15 +64,32 @@ def get_callbacks(a, version):
 
 
 def save_conf_matrix(confusion_matrix, csv_logger):
+    if confusion_matrix is None:
+        return
     labels = ['Negative', 'Positive']  # Labels for the two classes
-    plt.figure(figsize=(4, 4))
-    plt.imshow(confusion_matrix, interpolation='nearest', cmap=plt.cm.Blues)
+    plt.figure(figsize=(6, 6))
+    plt.imshow(confusion_matrix, interpolation='nearest', cmap='viridis')
 
-    plt.title("Confusion Matrix")
+    plt.title(f"Confusion Matrix (n={torch.sum(confusion_matrix).numpy()})")
     plt.colorbar()
-    tick_marks = torch.arange(len(labels))
-    plt.xticks(tick_marks, labels)
-    plt.yticks(tick_marks, labels)
+
+    # Add sample counts to each box
+    for i in range(len(labels)):
+        for j in range(len(labels)):
+            plt.text(j, i, str(confusion_matrix[i, j].numpy()), horizontalalignment='center',
+                     verticalalignment='center', color='white')
+
+    # Calculate row and column sums
+    row_sums = torch.sum(confusion_matrix, axis=1).numpy()
+    col_sums = torch.sum(confusion_matrix, axis=0).numpy()
+
+    # Add row and column n_sample sums to the axis ticks
+    row_labels = [f"{label} ({sum_})" for label, sum_ in zip(labels, row_sums)]
+    col_labels = [f"{label} ({sum_})" for label, sum_ in zip(labels, col_sums)]
+
+    tick_marks = np.arange(len(labels))
+    plt.xticks(tick_marks, col_labels)
+    plt.yticks(tick_marks, row_labels)
     plt.xlabel('Predicted')
     plt.ylabel('True')
     plt.tight_layout()
@@ -144,7 +161,7 @@ def train_pipeline(a, test_data, train_data, fold=None):
         model=pl_model,
     )
     save_conf_matrix(
-        confusion_matrix=pl_model.val_metrics["all"]['confusion_matrix'].compute(),
+        confusion_matrix=pl_model.best_conf_matrix,
         csv_logger=trainer.loggers[0]
     )
 

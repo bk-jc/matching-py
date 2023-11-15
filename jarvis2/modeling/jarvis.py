@@ -51,22 +51,10 @@ class Jarvis(nn.Module):
         elif a.loss_fn == "cosine":
             self.loss_fn = cos_loss
 
-        self.ffn_emb = FFN(
-            input_dim=self.base_model.config.hidden_size,
-            output_dim=a.hidden_dim,
-            hidden_dim=a.hidden_dim,
-            n_blocks=a.n_ffn_blocks_emb,
-            dropout_rate=a.dropout_rate,
-            relu_on_last_layer=True,
-        )
-        self.ffn_readout = FFN(
-            input_dim=a.hidden_dim if a.n_ffn_blocks_emb else self.base_model.config.hidden_size,
-            output_dim=a.readout_dim,
-            hidden_dim=a.hidden_dim,
-            n_blocks=a.n_ffn_blocks_emb,
-            dropout_rate=a.dropout_rate,
-            relu_on_last_layer=False,
-        )
+        self.ffn_emb_cv = self.get_ffn(a)
+        self.ffn_emb_job = self.ffn_emb_cv if a.siamese else self.get_ffn(a)
+        self.ffn_readout_cv = self.get_ffn(a, readout=True)
+        self.ffn_readout_job = self.ffn_readout_cv if a.siamese else self.get_ffn(a, readout=True)
 
         if self.cache_embeddings:
             cache_file = f'{self.base_model.config.name_or_path.replace("/", "-")}.pt'
@@ -80,7 +68,17 @@ class Jarvis(nn.Module):
 
         self.cos = nn.CosineSimilarity(dim=1, eps=1e-12)
 
-    def get_document_embedding(self, documents):
+    def get_ffn(self, a, readout=False):
+        return FFN(
+            input_dim=a.hidden_dim if (readout and a.n_ffn_blocks_emb) else self.base_model.config.hidden_size,
+            output_dim=a.readout_dim if readout else a.hidden_dim,
+            hidden_dim=a.hidden_dim,
+            n_blocks=a.n_ffn_blocks_emb,
+            dropout_rate=a.dropout_rate,
+            relu_on_last_layer=readout,
+        )
+
+    def get_document_embedding(self, documents, ffn_emb, ffn_readout):
 
         document_tensor, attention_mask = [], []
         for doc in documents:
@@ -93,7 +91,7 @@ class Jarvis(nn.Module):
 
         # Dense layer
         document_tensor = document_tensor.view(batch_size * n_skills, -1)
-        document_tensor = self.ffn_emb(document_tensor)
+        document_tensor = ffn_emb(document_tensor)
         document_tensor = document_tensor.view(batch_size, n_skills, -1)
 
         if self.pooling_mode == "cls":
@@ -132,7 +130,7 @@ class Jarvis(nn.Module):
             document_tensor = sum_pooled / non_zero_counts
 
         # Dense layer
-        document_tensor = self.ffn_readout(document_tensor)
+        document_tensor = ffn_readout(document_tensor)
 
         return document_tensor
 
@@ -174,8 +172,8 @@ class Jarvis(nn.Module):
 
     def forward(self, cv, job, label=None):
 
-        cv_emb = self.get_document_embedding(cv)
-        job_emb = self.get_document_embedding(job)
+        cv_emb = self.get_document_embedding(cv, self.ffn_emb_cv, self.ffn_readout_cv)
+        job_emb = self.get_document_embedding(job, self.ffn_emb_job, self.ffn_readout_job)
 
         sim = self.cos(cv_emb, job_emb)
         if label is None:

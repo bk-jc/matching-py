@@ -28,6 +28,8 @@ class JarvisLightningWrapper(pytorch_lightning.LightningModule):
         self.n_thresholds = n_thresholds
 
         self.threshold = 0.5  # Initial threshold TODO move this to the base model as this is not a Lightning construct
+        self.best_conf_matrix = None
+        self.best_score = 0  # TODO base this on a.lower_is_better
 
         # Freeze transformer model
         for p in self.model.base_model.parameters():
@@ -80,7 +82,7 @@ class JarvisLightningWrapper(pytorch_lightning.LightningModule):
                 if metric_key != "confusion_matrix":
                     self.log(f"{prefix}_{split_name}_{metric_key}", metric.compute())
                 else:
-                    conf_matrix = metric.confmat
+                    conf_matrix = metric.compute()
 
                     TP = conf_matrix[1, 1]
                     TN = conf_matrix[0, 0]
@@ -120,11 +122,16 @@ class JarvisLightningWrapper(pytorch_lightning.LightningModule):
         self.train_step_loss.clear()
         if hasattr(self.model, "cache_path") and self.model.cache:
             torch.save(self.model.cache, self.model.cache_path)
+        self.clear_metrics(self.train_metrics)
 
     def on_validation_epoch_end(self) -> None:
         self.update_threshold()
         for batch, outputs in list(zip(self.val_batches, self.val_outputs)):
             self.update_metrics(batch, outputs, self.val_metrics)
+        score = float(self.val_metrics["all"]["f1"].compute().numpy())
+        if score > self.best_score:
+            self.best_score = score
+            self.best_conf_matrix = self.val_metrics["all"]["confusion_matrix"].compute()
         self.log_metrics(self.val_metrics, prefix="val")
         self.log("val_loss", torch.stack(self.val_step_loss).mean())
         self.val_step_loss.clear()
@@ -133,9 +140,10 @@ class JarvisLightningWrapper(pytorch_lightning.LightningModule):
         self.val_labels = []
         self.val_outputs = []
         self.val_labels = []
+        self.clear_metrics(self.val_metrics)
 
     def update_threshold(self):
-
+        # TODO base this on the given metric in the args
         best_threshold = 0
         best_f1 = 0
 

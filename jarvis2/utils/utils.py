@@ -68,6 +68,8 @@ def parse_args(args) -> argparse.Namespace:
     parser.add_argument("--n_ffn_blocks_emb", type=int, required=False, default=1)
     parser.add_argument("--n_ffn_blocks_readout", type=int, required=False, default=1)
     parser.add_argument("--skill_prefix", type=str, required=False, default="")
+    parser.add_argument("--siamese", type=bool, required=False, default=True,
+                        help="When enabled, share weights for job and CV embeddings")
 
     # Training options
     parser.add_argument("--train_batch_size", type=int, required=False, default=4)
