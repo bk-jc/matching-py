@@ -97,6 +97,7 @@ def parse_args(args) -> argparse.Namespace:
     parser.add_argument("--score_metric", type=str, required=False, default="val_all_f1")
     parser.add_argument("--lower_is_better", type=bool, required=False, default=False)
     parser.add_argument("--optuna_path", type=str, required=False, default="")
+    parser.add_argument("--random_sampler", type=bool, required=False, default=False)
 
     # Artefact options
     parser.add_argument("--save_path", type=str, required=False, default=Path(__file__).parent.parent.parent / "output")
