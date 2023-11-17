@@ -56,6 +56,7 @@ def grid_search(a):
     def save_results_callback(_study: optuna.Study, trial: optuna.trial.FrozenTrial):
 
         _study.trials_dataframe().to_csv(base_path / "optuna.csv")
+        _study.trials_dataframe().corr()['value'].to_csv(base_path / "correlations.csv")
 
         # Save the parallel coordinate plot only for the best trial so far
         optuna.visualization.plot_parallel_coordinate(
@@ -66,9 +67,12 @@ def grid_search(a):
             target_name=config.get("score_metric", a.score_metric)
         ).write_image(base_path / "coordinates.png")
 
+    kwargs = {} if not a.random_sampler else {"sampler": optuna.samplers.RandomSampler(a.seed)}
+
     study = optuna.create_study(
         direction="minimize" if a.lower_is_better else "maximize",
         study_name=f"{a.exp_name}_{a.version}",
+        **kwargs
     )
 
     start_time = time.time()
@@ -76,5 +80,5 @@ def grid_search(a):
     duration = time.time() - start_time
     logging.info(f"Grid search duration: {duration} seconds.")
     logging.info(f"Average run duration: {duration / config['n_runs']} seconds.")
-    
+
     return study.best_params
