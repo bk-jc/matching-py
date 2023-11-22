@@ -38,6 +38,11 @@ class JarvisLightningWrapper(pytorch_lightning.LightningModule):
         # Metrics
         self.metric_splits = {
             "all": lambda x: [True] * len(x["label"]),
+            "min_2_skills": lambda x: [
+                min(
+                    len(x["cv"][i]["skills"]),
+                    len(x["job"][i]["skills"])
+                ) >= 2 for i in range(len(x["label"]))],
             "min_6_skills": lambda x: [
                 min(
                     len(x["cv"][i]["skills"]),
