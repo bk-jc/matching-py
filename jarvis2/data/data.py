@@ -28,7 +28,7 @@ def preprocess(data, a, train):
     # For cross-validation, we want to have negative samples for the test dataset too
     logging.info("Creating negative samples")
     if (train or a.n_splits > 0) and a.negative_sampling:
-        data = insert_negative_samples(data, a)
+        data = insert_negative_samples(data, a, train)
 
     return DataLoader(
         dataset=Dataset.from_list(data),
@@ -43,8 +43,8 @@ def preprocess(data, a, train):
     )
 
 
-def insert_negative_samples(data, a):
-    n_samples = int(len(data) * a.negative_ratio)
+def insert_negative_samples(data, a, train):
+    n_samples = int(len(data) * (a.negative_ratio if train else 1))
 
     samples = []
     for _ in range(n_samples):
