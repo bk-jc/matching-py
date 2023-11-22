@@ -1,0 +1,75 @@
+n_runs: 200
+n_splits: 5
+learning_rate:
+  low: 0.00001
+  high: 0.001
+  log: True
+train_batch_size:
+  int: True
+  low: 32
+  high: 512
+val_batch_size: 64
+train_steps:
+  int: True
+  low: 1000
+  high: 3000
+pooling_mode:
+  - max
+  - cls
+raw_train_path: /Users/bas/PycharmProjects/jarvis2/data/20231106_105236_dip_train_2023_2_0_20x300_23432.csv
+raw_test_path: /Users/bas/PycharmProjects/jarvis2/data/20230927_172709_eqk_validation_0_20x300_800.csv
+val_steps: 100
+num_heads:
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 12
+hidden_dim:
+  - 300
+  - 600
+readout_dim:
+  low: 32
+  high: 256
+  int: True
+n_ffn_blocks_emb:
+  low: 1
+  high: 3
+  int: True
+n_ffn_blocks_readout:
+  low: 1
+  high: 3
+  int: True
+cache_embeddings: True
+exp_name: big_grid
+dropout_rate:
+  low: 0.01
+  high: 0.4
+weight_decay:
+  low: 0.000001
+  high: 0.001
+  log: True
+loss_fn: cosine
+es_delta: 0.0
+allow_half_label: True
+es_patience: 10
+siamese:
+  - True
+  - False
+#model_name: sentence-transformers/all-mpnet-base-v2
+remove_synonym_skills:
+  - True
+  - False
+remove_strange_skills:
+  - True
+  - False
+rename_skills:
+  - True
+  - False
+pos_label_bias:
+  low: 0.
+  high: 0.2
+neg_label_bias:
+  low: 0.
+  high: 0.2

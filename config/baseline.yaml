@@ -1,26 +1,26 @@
 n_runs: 1
-n_splits: 2
-learning_rate:
-  log: True
-  low: 0.00001
-  high: 0.1
-train_batch_size: 64
+n_splits: 5
+learning_rate: 0.0008
+train_batch_size: 512
 val_batch_size: 64
-train_steps: 1000
+train_steps: 2000
 pooling_mode: max
-raw_train_path: /Users/bas/PycharmProjects/jarvis2/data/20231006_162316_dip_train_2023_1_0_20x300_11104.csv
+raw_train_path: /Users/bas/PycharmProjects/jarvis2/data/20231106_105236_dip_train_2023_2_0_20x300_23432.csv
 raw_test_path: /Users/bas/PycharmProjects/jarvis2/data/20230927_172709_eqk_validation_0_20x300_800.csv
-#n_workers: 5
 val_steps: 100
-hidden_dim: 300
+hidden_dim: 256
 readout_dim: 128
 n_ffn_blocks_emd: 1
 n_ffn_blocks_readout: 1
 cache_embeddings: True
 exp_name: baseline
-dropout_rate: 0.4
+dropout_rate: 0.15
 loss_fn: cosine
-es_delta: 0.001
+es_delta: 0.0
 allow_half_label: True
 es_patience: 10
-#model_name: distilroberta-base
+siamese: True
+#model_name: sentence-transformers/all-mpnet-base-v2
+remove_synonym_skills: True
+remove_strange_skills: True
+rename_skills: True
