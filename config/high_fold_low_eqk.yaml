@@ -1,0 +1,35 @@
+n_splits: 0
+n_runs: 1
+exp_name: eqk_0745_5fold_f1
+
+dropout_rate: 0.03975172005729330
+hidden_dim: 600
+learning_rate: 8.06360799510464E-05
+model_name: "sentence-transformers/all-mpnet-base-v2"
+n_ffn_blocks_emb: 2
+n_ffn_blocks_readout: 3
+neg_label_bias: 0.28819768684583600
+negative_ratio: 0.984846161936894
+num_heads: 12
+pooling_mode: "mean"
+pos_label_bias: 0.2864020307813460
+readout_dim: 247
+siamese: FALSE
+train_batch_size: 475
+train_steps: 1902
+use_jobtitle: TRUE
+weight_decay: 8.36732160331334E-08
+cache_embeddings: True
+es_delta: 0.0
+allow_half_label: True
+es_patience: 7
+remove_synonym_skills: True
+remove_strange_skills: False
+rename_skills: False
+raw_train_path: /Users/bas/PycharmProjects/jarvis2/data/20231106_105236_dip_train_2023_2_0_20x300_23432.csv
+raw_test_path: /Users/bas/PycharmProjects/jarvis2/data/20230927_172709_eqk_validation_0_20x300_800.csv
+val_steps: 100
+val_batch_size: 64
+
+
+
