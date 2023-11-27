@@ -50,9 +50,9 @@ def parse_args(args) -> argparse.Namespace:
     parser.add_argument("--remove_synonym_skills", type=bool, required=False, default=False)
     parser.add_argument("--remove_strange_skills", type=bool, required=False, default=False)
     parser.add_argument("--rename_skills", type=bool, required=False, default=False)
-    parser.add_argument("--augment_add_skill_rate", type=float, required=False, default=0.)
-    parser.add_argument("--augment_remove_skill_rate", type=float, required=False, default=0.)
-    parser.add_argument("--augment_change_skill_rate", type=float, required=False, default=0.)
+    parser.add_argument("--p_add_skill", type=float, required=False, default=0.)
+    parser.add_argument("--p_remove_skill", type=float, required=False, default=0.)
+    parser.add_argument("--p_change_skill", type=float, required=False, default=0.)
     parser.add_argument("--preprocess_jobtitle", type=bool, required=False, default=False)
 
     # Model config
