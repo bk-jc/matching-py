@@ -18,7 +18,6 @@ class DatasetWithAugmentation(Dataset):
         self.p_add_skill = a.p_add_skill
         self.p_remove_skill = a.p_remove_skill
         self.p_change_skill = a.p_change_skill
-        self.batch_size = a.train_batch_size
 
     @classmethod
     def get_skill_universe(cls, data):
@@ -44,7 +43,7 @@ class DatasetWithAugmentation(Dataset):
 
     def add_skill(self, data):
         for document in ["cv", "job"]:
-            augment_idx = np.random.rand(self.batch_size) < self.p_add_skill
+            augment_idx = np.random.rand(len(data['label'])) < self.p_add_skill
             for i, augment in enumerate(augment_idx):
                 if augment:
                     current_skills = set(data[document][i]['skills'])
@@ -55,7 +54,7 @@ class DatasetWithAugmentation(Dataset):
 
     def remove_skill(self, data):
         for document in ["cv", "job"]:
-            augment_idx = np.random.rand(self.batch_size) < self.p_add_skill
+            augment_idx = np.random.rand(len(data['label'])) < self.p_add_skill
             for i, augment in enumerate(augment_idx):
                 skills = data[document][i]["skills"]
                 if augment and len(skills) > 1:
@@ -64,7 +63,7 @@ class DatasetWithAugmentation(Dataset):
 
     def change_skill(self, data):
         for document in ["cv", "job"]:
-            augment_idx = np.random.rand(self.batch_size) < self.p_add_skill
+            augment_idx = np.random.rand(len(data['label'])) < self.p_add_skill
             for i, augment in enumerate(augment_idx):
                 if augment:
                     skills = data[document][i]["skills"]
