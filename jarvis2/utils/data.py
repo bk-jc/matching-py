@@ -19,6 +19,10 @@ def get_cv_hash(d):
     return hash("".join(sorted(d["cv"]["skills"])))
 
 
+def get_job_hash(d, use_jobtitle=False):
+    return hash("".join(sorted(d["job"]["skills"])) + (d["job"]["jobtitle"] if use_jobtitle else ""))
+
+
 def get_application_hash(a):
     return hash("".join(sorted(a["cv"]["skills"])) + a["job"]["jobtitle"] + "".join(sorted(a["job"]["skills"])) + str(
         a["label"]))
