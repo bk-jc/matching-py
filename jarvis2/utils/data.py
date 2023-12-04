@@ -4,7 +4,12 @@ from sklearn import model_selection
 def get_kfold_and_groups(a, data):
     if a.group_hashed:
         kfold = model_selection.GroupKFold(n_splits=a.n_splits)
-        groups = [get_candidate_hash(d) for d in data]
+        if a.group_name == "cv":
+            groups = [get_candidate_hash(d) for d in data]
+        elif a.group_name == "job":
+            groups = [get_job_hash(d) for d in data]
+        else:
+            raise NotImplementedError
     else:
         kfold = model_selection.KFold(n_splits=a.n_splits)
         groups = None
