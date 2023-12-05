@@ -32,8 +32,12 @@ class Jarvis(nn.Module):
         self.cache_embeddings = a.cache_embeddings
         self.skill_prefix = a.skill_prefix
         self.use_jobtitle = a.use_jobtitle
+        self.alpha = a.alpha
 
-        if a.pooling_mode == "cls":
+        if a.pooling_mode == "cls" and self.alpha > 0:
+            raise ValueError("CLS pooling with a alpha value over 0 is not a viable configuration.")
+
+        if a.pooling_mode == "cls" or self.alpha > 0:
             skill_attention_config = copy.deepcopy(self.base_model.config)
             setattr(skill_attention_config, "hidden_size", a.hidden_dim)
             skill_attention_config.position_embedding_type = None  # Disable pos embeddings
@@ -118,12 +122,14 @@ class Jarvis(nn.Module):
 
     def pool_skills(self, attention_mask, document_tensor, documents):
         if self.pooling_mode == "cls":
-            document_tensor = self.cls_pooling(attention_mask, document_tensor, documents)
+            pooled_tensor = self.cls_pooling(attention_mask, document_tensor, documents)
         elif self.pooling_mode == "max":
-            document_tensor = self.max_pooling(attention_mask, document_tensor)
+            pooled_tensor = self.max_pooling(attention_mask, document_tensor)
         elif self.pooling_mode == "mean":
-            document_tensor = self.mean_pooling(attention_mask, document_tensor)
-        return document_tensor
+            pooled_tensor = self.mean_pooling(attention_mask, document_tensor)
+        if self.alpha > 0:
+            pooled_tensor += self.cls_pooling(attention_mask, document_tensor, documents)
+        return pooled_tensor
 
     def cls_pooling(self, attention_mask, document_tensor, documents):
 
