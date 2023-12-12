@@ -6,14 +6,14 @@ val_batch_size: 64
 train_steps: 1161
 pooling_mode: max
 raw_train_path: /Users/bas/PycharmProjects/jarvis2/data/20231106_105236_dip_train_2023_2_0_20x300_23432.csv
-raw_test_path: /Users/bas/PycharmProjects/jarvis2/data/20230927_172709_eqk_validation_0_20x300_800.csv
+raw_test_path: /Users/bas/PycharmProjects/jarvis2/data/eqk_validation_enriched_0_20x300_800.csv
 val_steps: 100
 hidden_dim: 600
 readout_dim: 142
 n_ffn_blocks_emb: 1
 n_ffn_blocks_readout: 2
 cache_embeddings: True
-exp_name: eqk_073_5fold_f1
+exp_name: enriched_eqk_073_5fold_f1
 dropout_rate: 0.03993953731992860
 loss_fn: cosine
 es_delta: 0.0
