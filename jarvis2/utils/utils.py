@@ -6,6 +6,7 @@ from pathlib import Path
 
 import git
 import lightning
+import transformers
 import yaml
 
 log_levels = {
@@ -118,7 +119,7 @@ def init_logger_and_seed(args):
     args.commit_hash = get_current_git_commit_hash()
     if args.n_workers:
         os.environ["TOKENIZERS_PARALLELISM"] = "true"
-    lightning.seed_everything(args.seed)
+    seed_everything(args)
 
     # Set up the logger
     logger = logging.getLogger()
@@ -136,6 +137,11 @@ def init_logger_and_seed(args):
     logger.addHandler(console_handler)
 
     return args
+
+
+def seed_everything(args):
+    lightning.seed_everything(args.seed)
+    transformers.set_seed(args.seed)
 
 
 def get_current_git_commit_hash():

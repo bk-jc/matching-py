@@ -7,10 +7,11 @@ from jarvis2.data.getters import get_data
 from jarvis2.inference.onnx import export_to_onnx
 from jarvis2.utils.data import get_kfold_and_groups
 from jarvis2.utils.training import train_pipeline, compute_kfold_scores, get_csv_score
-from jarvis2.utils.utils import persist_args
+from jarvis2.utils.utils import persist_args, seed_everything
 
 
 def run_experiment(a):
+    seed_everything(a)
     persist_args(a)
 
     logging.info("Getting data")
