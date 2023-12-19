@@ -67,7 +67,7 @@ def grid_search(a):
             target_name=config.get("score_metric", a.score_metric)
         ).write_image(base_path / "coordinates.png")
 
-    kwargs = {} if not a.random_sampler else {"sampler": optuna.samplers.RandomSampler(a.seed)}
+    kwargs = {} if not config.get("random_sampler", False) else {"sampler": optuna.samplers.RandomSampler(a.seed)}
 
     study = optuna.create_study(
         direction="minimize" if a.lower_is_better else "maximize",
