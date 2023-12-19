@@ -18,8 +18,8 @@ pooling_mode:
   - max
   - mean
   - cls
-raw_train_path: /Users/bas/PycharmProjects/jarvis2/data/20231106_105236_dip_train_2023_2_0_20x300_23432.csv
-raw_test_path: /Users/bas/PycharmProjects/jarvis2/data/eqk_validation_enriched_0_20x300_800.csv
+raw_train_path: /Users/bas/PycharmProjects/jarvis2/data/dip_train_2023_3_extractedskills.csv
+raw_test_path: /Users/bas/PycharmProjects/jarvis2/data/eqk_validation_extracted_skills_0_20x300_800.csv
 val_steps: 100
 num_heads:
   - 2
@@ -44,7 +44,7 @@ n_ffn_blocks_readout:
   high: 3
   int: True
 cache_embeddings: True
-exp_name: bigger_grid
+exp_name: jobtitle_experiment_truerandom
 dropout_rate:
   low: 0.0001
   high: 0.1
@@ -62,6 +62,7 @@ siamese:
 model_name:
   - sentence-transformers/all-MiniLM-L6-v2
   - sentence-transformers/all-mpnet-base-v2
+  - jjzha/jobbert-base-cased
 remove_synonym_skills: True
 remove_strange_skills: False
 rename_skills: False
@@ -77,3 +78,5 @@ use_jobtitle:
 negative_ratio:
   low: 0.8
   high: 1.2
+preprocess_jobtitle: True
+group_name: job
