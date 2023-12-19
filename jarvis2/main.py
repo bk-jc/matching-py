@@ -3,6 +3,7 @@ import sys
 from jarvis2.training.main import run_experiment
 from jarvis2.training.optuna import grid_search
 from jarvis2.utils.utils import parse_args, init_logger_and_seed
+from utils.utils import validate_args
 
 
 def main(args):
@@ -16,4 +17,5 @@ def main(args):
 
 if __name__ == '__main__':
     args = parse_args(sys.argv[1:])
+    validate_args(args)
     main(args)
