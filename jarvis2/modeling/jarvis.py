@@ -34,9 +34,6 @@ class Jarvis(nn.Module):
         self.use_jobtitle = a.use_jobtitle
         self.alpha = a.alpha
 
-        if a.pooling_mode == "cls" and self.alpha > 0:
-            raise ValueError("CLS pooling with a alpha value over 0 is not a viable configuration.")
-
         if a.pooling_mode == "cls" or self.alpha > 0:
             skill_attention_config = copy.deepcopy(self.base_model.config)
             setattr(skill_attention_config, "hidden_size", a.hidden_dim)
@@ -125,7 +122,7 @@ class Jarvis(nn.Module):
             pooled_tensor = self.cls_pooling(attention_mask, document_tensor, documents)
         elif self.pooling_mode == "max":
             pooled_tensor = self.max_pooling(attention_mask, document_tensor)
-        elif self.pooling_mode == "mean":
+        else:  # mean pooling
             pooled_tensor = self.mean_pooling(attention_mask, document_tensor)
         if self.alpha > 0:
             pooled_tensor += self.cls_pooling(attention_mask, document_tensor, documents)
