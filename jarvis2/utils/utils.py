@@ -152,3 +152,9 @@ def persist_args(a):
     os.makedirs(Path(a.save_path) / a.exp_name / a.version, exist_ok=True)
     with open(Path(a.save_path) / a.exp_name / a.version / "args.yaml", 'w') as yaml_file:
         yaml.dump(a, yaml_file)
+
+
+def validate_args(a):
+    if a.pooling_mode == "cls" and a.alpha > 0:
+        raise ValueError(
+            "CLS pooling with a positive alpha does not make sense, because you compute the same thing twice.")
