@@ -6,6 +6,7 @@ from pathlib import Path
 
 import git
 import lightning
+import pytorch_lightning as pl
 import transformers
 import yaml
 
@@ -58,6 +59,7 @@ def parse_args(args) -> argparse.Namespace:
 
     # Model config
     parser.add_argument("--model_name", type=str, required=False, default="sentence-transformers/all-MiniLM-L6-v2")
+    parser.add_argument("--pretrained_path", type=str, required=False, default="")  # TODO implement
     parser.add_argument("--pooling_mode", type=str, required=False, default="cls", choices=["cls", "max", "mean"])
     parser.add_argument("--num_heads", type=int, required=False, default=4)
     parser.add_argument("--max_skills", type=int, required=False, default=20)
@@ -92,6 +94,16 @@ def parse_args(args) -> argparse.Namespace:
     parser.add_argument("--neg_label_bias", type=float, required=False, default=0.)
     parser.add_argument("--n_thresholds", type=int, required=False, default=100)
 
+    # Masked skill modelling
+    parser.add_argument("--do_msm", type=bool, required=False, default=False)
+    parser.add_argument("--msm_lr", type=float, required=False, default=1e-4)
+    parser.add_argument("--msm_weight_decay", type=float, required=False, default=1e-8)
+    parser.add_argument("--msm_train_batch_size", type=int, required=False, default=128)
+    parser.add_argument("--msm_val_batch_size", type=int, required=False, default=512)
+    parser.add_argument("--msm_train_steps", type=int, required=False, default=1000)
+    parser.add_argument("--msm_val_steps", type=int, required=False, default=100)
+    parser.add_argument("--finetune_lr", type=float, required=False, default=1e-7)
+
     # Cross-validation & grid search
     parser.add_argument("--n_splits", type=int, required=False, default=0,
                         help="Number of CV splits. Setting to 0 means no cross-validation.")
@@ -108,7 +120,10 @@ def parse_args(args) -> argparse.Namespace:
 
     parser.add_argument("--version", type=str, required=False, default=datetime.now().strftime('%Y_%m_%d_%H_%M_%S'))
 
-    return parser.parse_args(args)
+    a = parser.parse_args(args)
+    validate_args(a)
+
+    return a
 
 
 def init_logger_and_seed(args):
@@ -157,4 +172,45 @@ def persist_args(a):
 def validate_args(a):
     if a.pooling_mode == "cls" and a.alpha > 0:
         raise ValueError(
-            "CLS pooling with a positive alpha does not make sense, because you compute the same thing twice.")
+            "CLS pooling with a positive alpha does not make sense, because you compute the same thing twice."
+        )
+    if a.do_msm and a.pooling_mode != "cls":
+        raise ValueError(
+            f"Masked skill modelling without CLS pooling does not make sense. Configured pooling method:"
+            f" {a.pooling_mode}"
+        )
+    if a.do_msm and not a.siamese:
+        raise NotImplementedError(
+            "Masked skill modelling for non-siamese networks is currently not implemented."
+        )
+    if a.do_msm and a.pretrained_path:
+        raise ValueError(
+            "You cannot use a pretrained model for doing MSM. Either disable do_msm or set pretrained_path to an empty"
+            " string"
+        )
+
+
+def get_callbacks(a, version):
+    callbacks = [
+        pl.callbacks.EarlyStopping(
+            monitor="val_loss",
+            min_delta=a.es_delta,
+            patience=a.es_patience,
+            verbose=True,
+            mode="min",
+            check_on_train_epoch_end=False,
+        ),
+        pl.callbacks.LearningRateMonitor(logging_interval="step")
+    ]
+
+    if a.n_splits <= 1:
+        callbacks.append(
+            pl.callbacks.ModelCheckpoint(
+                monitor="val_loss",
+                save_on_train_epoch_end=False,
+                dirpath=os.path.join(a.save_path, a.exp_name, version),
+                every_n_epochs=1
+            ),
+        )
+
+    return callbacks

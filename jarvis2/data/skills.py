@@ -1091,3 +1091,18 @@ MAPPING = {
     "SAP-PY Payroll": "",
     "Optoelectronics": "",
 }
+
+
+def get_skill_to_idx(a):
+    mapping = get_mapping(a)
+    return {k: i for i, k in enumerate(mapping.keys())}
+
+
+def get_idx_to_skill(a):
+    mapping = get_mapping(a)
+    return {i: k for i, k in enumerate(mapping.keys())}
+
+
+def get_mapping(a):
+    # TODO ignore_skills, remove_synonyms
+    return MAPPING

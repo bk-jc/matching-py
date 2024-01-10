@@ -5,7 +5,7 @@ from sklearn.metrics import f1_score
 from transformers import get_linear_schedule_with_warmup
 
 
-class JarvisLightningWrapper(pytorch_lightning.LightningModule):
+class LightningWrapper(pytorch_lightning.LightningModule):
     """PyTorch Lightning wrapper for Jarvis model, such that it is compatible with Lightning trainer"""
 
     def __init__(
@@ -17,10 +17,12 @@ class JarvisLightningWrapper(pytorch_lightning.LightningModule):
             n_thresholds,
             train_ds=None,
             val_ds=None,
+            finetune_lr=None,
     ):
         super().__init__()
         self.model = base_model
         self.lr = lr
+        self.finetune_lr = finetune_lr if finetune_lr is not None else lr
         self.weight_decay = weight_decay
         self.n_steps = n_steps
         self.train_ds = train_ds
@@ -30,10 +32,6 @@ class JarvisLightningWrapper(pytorch_lightning.LightningModule):
         self.threshold = 0.5  # Initial threshold TODO move this to the base model as this is not a Lightning construct
         self.best_conf_matrix = None
         self.best_score = 0  # TODO base this on a.lower_is_better
-
-        # Freeze transformer model
-        for p in self.model.base_model.parameters():
-            p.requires_grad = False
 
         # Metrics
         self.metric_splits = {
@@ -170,9 +168,13 @@ class JarvisLightningWrapper(pytorch_lightning.LightningModule):
         return self.val_ds
 
     def configure_optimizers(self):
+        training_params = [(n, p) for (n, p) in self.model.named_parameters() if p.requires_grad]
+        param_groups = [
+            {'params': [p for (n, p) in training_params if "ffn_readout" not in n], 'lr': self.finetune_lr},
+            {'params': [p for (n, p) in training_params if "ffn_readout" in n], 'lr': self.lr},
+        ]
         optimizer = torch.optim.AdamW(
-            params=[p for p in self.model.parameters() if p.requires_grad],
-            lr=self.lr,
+            params=param_groups,
             betas=(0.9, 0.95),
             eps=1e-8,
             weight_decay=self.weight_decay,

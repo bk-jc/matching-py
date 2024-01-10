@@ -5,7 +5,6 @@ from copy import deepcopy
 
 import numpy as np
 import pandas as pd
-import pytorch_lightning as pl
 import torch
 from lightning.pytorch.loggers import CSVLogger, TensorBoardLogger
 from matplotlib import pyplot as plt
@@ -13,7 +12,9 @@ from pytorch_lightning import Trainer
 from transformers import TrainerCallback
 
 from jarvis2.data.data import preprocess
-from jarvis2.modeling.getters import get_model
+from jarvis2.modeling.model import get_model
+from training import msm
+from utils.utils import get_callbacks
 
 
 def compute_metrics(eval_pred):
@@ -35,32 +36,6 @@ class CustomCallback(TrainerCallback):
         control_copy = deepcopy(control)
         self._trainer.evaluate(eval_dataset=self._trainer.train_dataset, metric_key_prefix="train")
         return control_copy
-
-
-def get_callbacks(a, version):
-    callbacks = [
-        pl.callbacks.EarlyStopping(
-            monitor="val_loss",
-            min_delta=a.es_delta,
-            patience=a.es_patience,
-            verbose=True,
-            mode="min",
-            check_on_train_epoch_end=False,
-        ),
-        pl.callbacks.LearningRateMonitor(logging_interval="step")
-    ]
-
-    if a.n_splits <= 1:
-        callbacks.append(
-            pl.callbacks.ModelCheckpoint(
-                monitor="val_loss",
-                save_on_train_epoch_end=False,
-                dirpath=os.path.join(a.save_path, a.exp_name, version),
-                every_n_epochs=1
-            ),
-        )
-
-    return callbacks
 
 
 def save_conf_matrix(confusion_matrix, csv_logger):
@@ -103,12 +78,19 @@ def save_conf_matrix(confusion_matrix, csv_logger):
 def compute_kfold_scores(a, version):
     base_path = os.path.join(a.save_path, a.exp_name, version)
     cvs_paths = [os.path.join(base_path, f"fold{fold}", "metrics.csv") for fold in range(1, a.n_splits + 1)]
+    msm_csv_paths = [os.path.join(base_path, f"fold{fold}_msm", "metrics.csv") for fold in range(1, a.n_splits + 1)]
     fold_scores = []
-    for csv_path in cvs_paths:
-        fold_score = get_csv_score(a, csv_path)
-        fold_scores.append(fold_score)
+    msm_scores = []
+    if not a.score_metric.startswith("msm_"):
+        for csv_path in cvs_paths:
+            fold_score = get_csv_score(a, csv_path)
+            fold_scores.append(fold_score)
+    for csv_path in msm_csv_paths:
+        fold_score = get_msm_csv_score(a, csv_path)
+        msm_scores.append(fold_score)
 
     kfold_score = np.mean(fold_scores)
+    msm_kfold_score = np.mean(msm_scores)
 
     with open(os.path.join(base_path, 'kfold_score.csv'), 'w', newline='') as file:
         writer = csv.writer(file)
@@ -118,7 +100,10 @@ def compute_kfold_scores(a, version):
              f" lower_is_better={a.lower_is_better})"
              ])
         writer.writerow([a.score_metric, kfold_score])
+        writer.writerow(["msm_accuracy", msm_kfold_score])
 
+    if a.score_metric.startswith("msm_"):
+        return msm_kfold_score
     return kfold_score
 
 
@@ -128,13 +113,24 @@ def get_csv_score(a, csv_path):
     return fold_score
 
 
+def get_msm_csv_score(a, csv_path):
+    csv_file = pd.read_csv(csv_path)
+    fold_score = csv_file["val_acc_epoch"].max()  # TODO should be from args
+    return fold_score
+
+
 def train_pipeline(a, test_data, train_data, fold=None):
+    encoder = None
+    if a.do_msm:
+        logging.info("Performing MSM")
+        encoder = msm.main(a, test_data, train_data, fold=fold)
+
     logging.info("Preprocessing data")
     train_ds = preprocess(train_data, a, train=True)
     test_ds = preprocess(test_data, a, train=False)
 
     logging.info("Loading model")
-    pl_model = get_model(a, train_ds, test_ds)
+    pl_model = get_model(a, train_ds, test_ds, encoder)
 
     logging.info("Loading trainer")
     version = a.version
