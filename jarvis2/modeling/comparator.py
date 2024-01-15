@@ -28,9 +28,9 @@ class Comparator(nn.Module):
 
             if a.pretrained_path:
                 # TODO check if this works
-                self.cv_encoder.load_state_dict(torch.load(a.pretrained_path)['state_dict'])
+                self.cv_encoder.load_state_dict(torch.load(a.pretrained_path))
                 if not a.siamese:
-                    self.job_encoder.load_state_dict(torch.load(a.pretrained_path)['state_dict'])
+                    self.job_encoder.load_state_dict(torch.load(a.pretrained_path))
 
         if a.loss_fn == "contrastive":
             loss_fn = contrastive_loss
