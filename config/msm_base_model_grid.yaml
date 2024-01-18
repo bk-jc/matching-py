@@ -1,0 +1,46 @@
+n_runs: 20
+n_splits: 5
+raw_train_path: /Users/bas/PycharmProjects/jarvis2/data/20231106_105236_dip_train_2023_2_0_20x300_23432.csv
+raw_test_path: /Users/bas/PycharmProjects/jarvis2/data/eqk_validation_enriched_0_20x300_800.csv
+pooling_mode: cls
+alpha: 0
+exp_name: msm_base_model
+dropout_rate: 0.15
+allow_half_label: True
+siamese: True
+#remove_synonym_skills: True
+#remove_strange_skills: True
+#rename_skills: True
+preprocess_jobtitle: True
+score_metric: msm_accuracy
+do_msm: True
+msm_train_steps:
+  low: 3000
+  high: 8000
+  int: True
+msm_train_batch_size:
+  low: 64
+  high: 256
+  int: True
+msm_val_batch_size: 512
+msm_val_steps: 100
+train_steps: 1
+val_steps: 1
+
+learning_rate:
+  low: 0.000001
+  high: 0.0001
+  log: True
+num_heads:
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 12
+hidden_dim:
+  - 300
+  - 600
+model_name:
+  - sentence-transformers/all-MiniLM-L6-v2
+  - sentence-transformers/all-mpnet-base-v2
