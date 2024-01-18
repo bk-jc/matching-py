@@ -1,4 +1,3 @@
-import csv
 import os
 
 
@@ -21,36 +20,6 @@ def compute_google_sheet(a, model, dataset):
 
     gsheet_path = os.path.join(a.save_path, a.exp_name, a.version, "gsheet")
     os.makedirs(gsheet_path, exist_ok=True)
-
-    # Attention: this seems to not work as intended. Importing the functions makes it such that the variables of the
-    #  current sheet are not recognised. On the contrary, leaving them empty and importing them into an existing
-    #  template overwrites the current cells. It thus seems easier to copy-paste the columns into the sheet manually.
-    # TODO make a decision about this and remove the code.
-    if False:
-        columns = [
-            ["" for _ in dataset],  # Table
-            computed,  # Computed
-            expected,  # Expected
-            # [f'=IF(B{i + 1} > mean_sim,"A", IF(B{i + 1} > mean_disim, "B", "C"))'
-            #  for i in range(len(dataset))],
-            ["" for _ in dataset],  # Computed bucket
-            # [f'=IF(C{i + 1} = 1, "A", IF(C{i + 1} = 0.5, "B", "C"))'
-            #  for i in range(len(dataset))],
-            ["" for _ in dataset],  # Expected bucket
-            ["" for _ in dataset],  # Application ID
-            ["" for _ in dataset],  # Job ID
-            ["" for _ in dataset],  # Source platform
-            skills_cv,  # Skills CV
-            skills_job,  # Skills Job
-            skills_cv,  # Native skills CV
-            skills_job,  # Native skills Job
-        ]
-
-        rows = list(zip(*columns))
-    
-        with open(os.path.join(gsheet_path, 'import_sheet.csv'), 'w', newline='') as file:
-            writer = csv.writer(file)
-            writer.writerows(rows)
 
     def save_list_to_file(data_list, filename):
         file_path = os.path.join(gsheet_path, filename)
