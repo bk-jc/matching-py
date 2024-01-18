@@ -77,20 +77,13 @@ def save_conf_matrix(confusion_matrix, csv_logger):
 
 def compute_kfold_scores(a, version):
     base_path = os.path.join(a.save_path, a.exp_name, version)
-    cvs_paths = [os.path.join(base_path, f"fold{fold}", "metrics.csv") for fold in range(1, a.n_splits + 1)]
-    msm_csv_paths = [os.path.join(base_path, f"fold{fold}_msm", "metrics.csv") for fold in range(1, a.n_splits + 1)]
-    fold_scores = []
-    msm_scores = []
-    if not a.score_metric.startswith("msm_"):
-        for csv_path in cvs_paths:
-            fold_score = get_csv_score(a, csv_path)
-            fold_scores.append(fold_score)
-    for csv_path in msm_csv_paths:
-        fold_score = get_msm_csv_score(a, csv_path)
-        msm_scores.append(fold_score)
-
-    kfold_score = np.mean(fold_scores)
-    msm_kfold_score = np.mean(msm_scores)
+    if a.score_metric.startswith("msm_"):
+        csv_paths = [os.path.join(base_path, f"fold{fold}_msm", "metrics.csv") for fold in range(1, a.n_splits + 1)]
+    else:
+        csv_paths = [os.path.join(base_path, f"fold{fold}", "metrics.csv") for fold in range(1, a.n_splits + 1)]
+    get_score_fn = get_msm_csv_score if a.score_metric.startswith("msm_") else get_csv_score
+    
+    kfold_score = np.mean([get_score_fn(a, csv_path) for csv_path in csv_paths])
 
     with open(os.path.join(base_path, 'kfold_score.csv'), 'w', newline='') as file:
         writer = csv.writer(file)
@@ -100,10 +93,7 @@ def compute_kfold_scores(a, version):
              f" lower_is_better={a.lower_is_better})"
              ])
         writer.writerow([a.score_metric, kfold_score])
-        writer.writerow(["msm_accuracy", msm_kfold_score])
 
-    if a.score_metric.startswith("msm_"):
-        return msm_kfold_score
     return kfold_score
 
 
@@ -156,6 +146,12 @@ def train_pipeline(a, test_data, train_data, fold=None):
     trainer.fit(
         model=pl_model,
     )
+
+    try:
+        pl_model.load_state_dict(torch.load(trainer.checkpoint_callback.best_model_path)["state_dict"])
+    except Exception as e:
+        logging.info(f"Failed to load best model: {e}")
+
     save_conf_matrix(
         confusion_matrix=pl_model.best_conf_matrix,
         csv_logger=trainer.loggers[0]
