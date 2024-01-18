@@ -29,7 +29,7 @@ class LightningWrapper(pytorch_lightning.LightningModule):
         self.val_ds = val_ds
         self.n_thresholds = n_thresholds
 
-        self.threshold = 0.5  # Initial threshold TODO move this to the base model as this is not a Lightning construct
+        self.model.threshold = 0.5  # Initial threshold TODO move this to the base model as this is not a Lightning construct
         self.best_conf_matrix = None
         self.best_score = 0  # TODO base this on a.lower_is_better
 
@@ -72,7 +72,7 @@ class LightningWrapper(pytorch_lightning.LightningModule):
 
     def update_metrics(self, batch, outputs, metrics):
         target, preds = batch['label'], outputs['sim']
-        preds = (preds > self.threshold).to(torch.int64)  # threshold the predictions
+        preds = (preds > self.model.threshold).to(torch.int64)  # threshold the predictions
         for split_name, filter_fn in self.metric_splits.items():
             filtered_idx = filter_fn(batch)
             if True in filtered_idx:
@@ -159,7 +159,7 @@ class LightningWrapper(pytorch_lightning.LightningModule):
                 best_f1 = f1
                 best_threshold = threshold
 
-        self.threshold = best_threshold
+        self.model.threshold = best_threshold
 
     def train_dataloader(self):
         return self.train_ds
