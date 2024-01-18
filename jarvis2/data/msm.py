@@ -2,7 +2,7 @@ import torch
 from datasets import Dataset
 from torch.utils.data import DataLoader
 
-from data.skills import get_skill_to_idx
+from data.skills import get_skill_to_idx, MAPPING
 from utils.msm import MASK_TOKEN
 
 
@@ -12,6 +12,8 @@ def get_msm_pairs(a, data):  # TODO this mask token should probably be custom
     msm_pairs = []
     # TODO weight documents inversely with number of skills to avoid skewed dataset
     for d in data:
+        if a.ignore_old_skills:
+            d["skills"] = [s for s in d["skills"] if s in MAPPING.keys()]
         if len(d["skills"]) <= 1:
             continue
         if len(d["skills"]) > a.max_skills + 1:

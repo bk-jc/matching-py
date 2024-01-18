@@ -190,6 +190,8 @@ def preprocess_skills(data, a):
     synonym_mapping = {alias: category[0] for category in DUPLICATES for alias in category[1:]}
     for docs in tqdm(data, desc="Preprocessing skills"):
         for d in (docs["cv"], docs["job"]):
+            if a.ignore_old_skills:
+                d["skills"] = [s for s in d["skills"] if s in MAPPING.keys()]
             for i, skill in reversed(list(enumerate(d["skills"]))):
                 if a.remove_synonym_skills:
                     d["skills"][i] = synonym_mapping.get(skill, skill)

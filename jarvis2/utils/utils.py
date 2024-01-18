@@ -102,6 +102,7 @@ def parse_args(args) -> argparse.Namespace:
     parser.add_argument("--msm_val_batch_size", type=int, required=False, default=512)
     parser.add_argument("--msm_train_steps", type=int, required=False, default=1000)
     parser.add_argument("--msm_val_steps", type=int, required=False, default=100)
+    parser.add_argument("--ignore_old_skills", type=bool, required=False, default=True)
     parser.add_argument("--finetune_lr", type=float, required=False, default=1e-7)
 
     # Cross-validation & grid search
