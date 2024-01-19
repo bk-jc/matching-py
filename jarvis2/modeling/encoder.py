@@ -33,7 +33,7 @@ class Encoder(nn.Module):
         self.ffn_emb = self.get_ffn(a)
         self.ffn_readout = self.get_ffn(a, readout=True)
 
-        # TODO move to pooling module
+        # TODO move to separate pooling module
         if self.pooling_mode == "cls" or self.alpha > 0:
             skill_attention_config = AutoConfig.from_pretrained(a.model_name)
             setattr(skill_attention_config, "hidden_size", a.hidden_dim)

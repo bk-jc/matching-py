@@ -7,7 +7,7 @@ from utils.msm import MASK_TOKEN
 
 
 # TODO deduplicate?
-def get_msm_pairs(a, data):  # TODO this mask token should probably be custom
+def get_msm_pairs(a, data):
     skill_to_idx = get_skill_to_idx(a)
     msm_pairs = []
     # TODO weight documents inversely with number of skills to avoid skewed dataset

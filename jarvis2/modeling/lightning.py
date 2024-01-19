@@ -10,6 +10,7 @@ class LightningWrapper(pytorch_lightning.LightningModule):
 
     def __init__(
             self,
+            a,
             base_model,
             lr,
             weight_decay,
@@ -28,10 +29,12 @@ class LightningWrapper(pytorch_lightning.LightningModule):
         self.train_ds = train_ds
         self.val_ds = val_ds
         self.n_thresholds = n_thresholds
+        self.lower_is_better = a.lower_is_better
+        self.score_metric = a.score_metric
+        self.best_score = float('inf') if self.lower_is_better else 0
 
-        self.model.threshold = 0.5  # Initial threshold TODO move this to the base model as this is not a Lightning construct
+        self.model.threshold = 0.5  # Initial threshold
         self.best_conf_matrix = None
-        self.best_score = 0  # TODO base this on a.lower_is_better
 
         # Metrics
         self.metric_splits = {
@@ -146,20 +149,26 @@ class LightningWrapper(pytorch_lightning.LightningModule):
         self.clear_metrics(self.val_metrics)
 
     def update_threshold(self):
-        # TODO base this on the given metric in the args
-        best_threshold = 0
-        best_f1 = 0
+        best_threshold = 0.5
+        current_best_score = float('inf') if self.lower_is_better else 0
 
         for value in range(0, self.n_thresholds):
             threshold = value / self.n_thresholds
 
-            f1 = f1_score(self.val_labels, [1 if p >= threshold else 0 for p in self.val_sims])
+            if self.score_metric == "val_all_f1":
+                score = f1_score(self.val_labels, [1 if p >= threshold else 0 for p in self.val_sims])
+            else:
+                raise NotImplementedError(f"Thresholding is not implemented for score_metric {self.score_metric}")
 
-            if f1 > best_f1:
-                best_f1 = f1
+            if (self.lower_is_better and score < current_best_score) or (
+                    (not self.lower_is_better) and score > current_best_score):
+                current_best_score = score
                 best_threshold = threshold
 
-        self.model.threshold = best_threshold
+        if (self.lower_is_better and current_best_score < self.best_score) or (
+                (not self.lower_is_better) and current_best_score > self.best_score):
+            self.best_score = current_best_score
+            self.model.threshold = best_threshold
 
     def train_dataloader(self):
         return self.train_ds

@@ -82,7 +82,7 @@ def compute_kfold_scores(a, version):
     else:
         csv_paths = [os.path.join(base_path, f"fold{fold}", "metrics.csv") for fold in range(1, a.n_splits + 1)]
     get_score_fn = get_msm_csv_score if a.score_metric.startswith("msm_") else get_csv_score
-    
+
     kfold_score = np.mean([get_score_fn(a, csv_path) for csv_path in csv_paths])
 
     with open(os.path.join(base_path, 'kfold_score.csv'), 'w', newline='') as file:
@@ -105,7 +105,11 @@ def get_csv_score(a, csv_path):
 
 def get_msm_csv_score(a, csv_path):
     csv_file = pd.read_csv(csv_path)
-    fold_score = csv_file["val_acc_epoch"].max()  # TODO should be from args
+    try:
+        fold_score = csv_file[a.score_metric].max()
+    except:
+        logging.warning(f"Could not use given metric {a.score_metric} - using default MSM metric of 'val_acc_epoch'")
+        fold_score = csv_file["val_acc_epoch"].max()
     return fold_score
 
 

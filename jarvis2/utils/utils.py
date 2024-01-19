@@ -59,7 +59,7 @@ def parse_args(args) -> argparse.Namespace:
 
     # Model config
     parser.add_argument("--model_name", type=str, required=False, default="sentence-transformers/all-MiniLM-L6-v2")
-    parser.add_argument("--pretrained_path", type=str, required=False, default="")  # TODO implement
+    parser.add_argument("--pretrained_path", type=str, required=False, default="")
     parser.add_argument("--pooling_mode", type=str, required=False, default="cls", choices=["cls", "max", "mean"])
     parser.add_argument("--num_heads", type=int, required=False, default=4)
     parser.add_argument("--max_skills", type=int, required=False, default=20)
@@ -110,7 +110,7 @@ def parse_args(args) -> argparse.Namespace:
                         help="Number of CV splits. Setting to 0 means no cross-validation.")
     parser.add_argument("--group_hashed", type=bool, required=False, default=True)
     parser.add_argument("--group_name", type=str, choices=["cv", "job"], required=False, default="cv")
-    parser.add_argument("--score_metric", type=str, required=False, default="val_all_f1")
+    parser.add_argument("--score_metric", type=str, required=False, default="val_all_f1")  # For MSM: val_acc_epoch
     parser.add_argument("--lower_is_better", type=bool, required=False, default=False)
     parser.add_argument("--optuna_path", type=str, required=False, default="")
     parser.add_argument("--random_sampler", type=bool, required=False, default=False)
