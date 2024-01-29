@@ -4,8 +4,8 @@ from torch import nn
 from torchmetrics import Accuracy
 from transformers import get_linear_schedule_with_warmup
 
-from data.skills import get_mapping
-from modeling.encoder import Encoder
+from jarvis2.data.skills import get_mapping
+from jarvis2.modeling.encoder import Encoder
 
 
 class LightningWrapper(pytorch_lightning.LightningModule):

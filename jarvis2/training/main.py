@@ -3,8 +3,8 @@ import os
 
 import numpy as np
 
-from eval.google_sheet import compute_google_sheet
 from jarvis2.data.getters import get_data
+from jarvis2.eval.google_sheet import compute_google_sheet
 from jarvis2.utils.data import get_kfold_and_groups
 from jarvis2.utils.training import train_pipeline, compute_kfold_scores, get_csv_score
 from jarvis2.utils.utils import persist_args, seed_everything

@@ -6,7 +6,7 @@ from torch import nn as nn
 from torch._C._nn import pad
 from transformers import AutoConfig, BertLayer, AutoModel, AutoTokenizer
 
-from modeling.layers import FFN
+from jarvis2.modeling.layers import FFN
 
 
 class Encoder(nn.Module):

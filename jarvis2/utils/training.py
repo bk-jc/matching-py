@@ -13,8 +13,8 @@ from transformers import TrainerCallback
 
 from jarvis2.data.data import preprocess
 from jarvis2.modeling.model import get_model
-from training import msm
-from utils.utils import get_callbacks
+from jarvis2.training import msm
+from jarvis2.utils.utils import get_callbacks
 
 
 def compute_metrics(eval_pred):

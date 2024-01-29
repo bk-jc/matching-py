@@ -1,8 +1,8 @@
 import torch
 from torch import nn as nn
 
+from jarvis2.modeling.encoder import Encoder
 from jarvis2.modeling.losses import contrastive_loss, cos_loss
-from modeling.encoder import Encoder
 
 
 class Comparator(nn.Module):

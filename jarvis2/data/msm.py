@@ -2,8 +2,8 @@ import torch
 from datasets import Dataset
 from torch.utils.data import DataLoader
 
-from data.skills import get_skill_to_idx, MAPPING
-from utils.msm import MASK_TOKEN
+from jarvis2.data.skills import get_skill_to_idx, MAPPING
+from jarvis2.utils.msm import MASK_TOKEN
 
 
 # TODO deduplicate?

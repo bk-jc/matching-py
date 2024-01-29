@@ -4,9 +4,9 @@ import torch
 from lightning.pytorch.loggers import CSVLogger, TensorBoardLogger
 from pytorch_lightning import Trainer
 
-from data.msm import get_dataloader
-from modeling.msm import LightningWrapper, MaskedSkillEncoder
-from utils.utils import get_callbacks
+from jarvis2.data.msm import get_dataloader
+from jarvis2.modeling.msm import LightningWrapper, MaskedSkillEncoder
+from jarvis2.utils.utils import get_callbacks
 
 
 def main(a, test_data, train_data, fold):
