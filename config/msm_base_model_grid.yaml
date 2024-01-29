@@ -1,6 +1,6 @@
 n_runs: 20
 n_splits: 5
-raw_train_path: /Users/bas/PycharmProjects/jarvis2/data/20231106_105236_dip_train_2023_2_0_20x300_23432.csv
+raw_train_path: /Users/bas/PycharmProjects/jarvis2/data/dip_train_2024_1_combinedskills.csv
 raw_test_path: /Users/bas/PycharmProjects/jarvis2/data/eqk_validation_enriched_0_20x300_800.csv
 pooling_mode: cls
 alpha: 0
@@ -15,8 +15,8 @@ preprocess_jobtitle: True
 score_metric: msm_accuracy
 do_msm: True
 msm_train_steps:
-  low: 3000
-  high: 8000
+  low: 5000
+  high: 20000
   int: True
 msm_train_batch_size:
   low: 64

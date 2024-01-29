@@ -18,7 +18,7 @@ pooling_mode:
   - max
   - mean
   - cls
-raw_train_path: /Users/bas/PycharmProjects/jarvis2/data/dip_train_2023_3_extractedskills.csv
+raw_train_path: /Users/bas/PycharmProjects/jarvis2/data/dip_train_2024_1_extractedskills.csv
 raw_test_path: /Users/bas/PycharmProjects/jarvis2/data/eqk_validation_extracted_skills_0_20x300_800.csv
 val_steps: 100
 num_heads:

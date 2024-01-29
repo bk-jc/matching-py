@@ -26,7 +26,7 @@ es_patience: 7
 remove_synonym_skills: True
 remove_strange_skills: False
 rename_skills: False
-raw_train_path: /Users/bas/PycharmProjects/jarvis2/data/20231106_105236_dip_train_2023_2_0_20x300_23432.csv
+raw_train_path: /Users/bas/PycharmProjects/jarvis2/data/dip_train_2024_1_combinedskills.csv
 raw_test_path: /Users/bas/PycharmProjects/jarvis2/data/20230927_172709_eqk_validation_0_20x300_800.csv
 val_steps: 100
 val_batch_size: 64

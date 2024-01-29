@@ -44,7 +44,7 @@ preprocess_jobtitle: true
 pretrained_path: ''
 random_sampler: false
 raw_test_path: /Users/bas/PycharmProjects/jarvis2/data/eqk_validation_enriched_0_20x300_800.csv
-raw_train_path: /Users/bas/PycharmProjects/jarvis2/data/20231106_105236_dip_train_2023_2_0_20x300_23432.csv
+raw_train_path: /Users/bas/PycharmProjects/jarvis2/data/dip_train_2024_1_combinedskills.csv
 readout_dim: 300
 remove_strange_skills: false
 remove_synonym_skills: false
