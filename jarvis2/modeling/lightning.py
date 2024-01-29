@@ -1,3 +1,5 @@
+import logging
+
 import pytorch_lightning
 import torch
 import torchmetrics
@@ -158,8 +160,10 @@ class LightningWrapper(pytorch_lightning.LightningModule):
             if self.score_metric == "val_all_f1":
                 score = f1_score(self.val_labels, [1 if p >= threshold else 0 for p in self.val_sims])
             else:
-                raise NotImplementedError(f"Thresholding is not implemented for score_metric {self.score_metric}")
-
+                logging.warning(
+                    f"Thresholding is not implemented for score_metric {self.score_metric}. Setting threshold to 0.5")
+                break
+                
             if (self.lower_is_better and score < current_best_score) or (
                     (not self.lower_is_better) and score > current_best_score):
                 current_best_score = score
